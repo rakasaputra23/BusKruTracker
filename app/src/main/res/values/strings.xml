@@ -1,3 +1,88 @@
 <resources>
-    <string name="app_name">BusKruTracker</string>
+    <!-- App Name -->
+    <string name="app_name">Bus Kru Tracker</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Bus Tracker</string>
+    <string name="login_subtitle">APLIKASI KRU &amp; OPERASIONAL</string>
+    <string name="login_username_label">ID PENGEMUDI</string>
+    <string name="login_username_hint">Masukkan ID</string>
+    <string name="login_password_label">KATA SANDI</string>
+    <string name="login_password_hint">Masukkan password</string>
+    <string name="login_button">MASUK SISTEM</string>
+
+    <!-- Persiapan Screen -->
+    <string name="persiapan_greeting">Halo, %s!</string>
+    <string name="persiapan_status_online">● Online</string>
+    <string name="persiapan_armada_label">PILIH ARMADA BUS</string>
+    <string name="persiapan_rute_label">PILIH RUTE TRAYEK</string>
+    <string name="persiapan_button">🚀 MULAI PERJALANAN</string>
+
+    <!-- Tracking Screen -->
+    <string name="tracking_rute_label">RUTE AKTIF</string>
+    <string name="tracking_gps_status">GPS ON</string>
+    <string name="tracking_penumpang_label">TOTAL PENUMPANG</string>
+    <string name="tracking_btn_turun">−\nTURUN</string>
+    <string name="tracking_btn_naik">+\nNAIK</string>
+    <string name="tracking_kondisi_label">LAPOR KONDISI BUS:</string>
+    <string name="tracking_status_lancar">✓\nLANCAR</string>
+    <string name="tracking_status_macet">⚠\nMACET</string>
+    <string name="tracking_status_mogok">🔧\nMOGOK</string>
+    <string name="tracking_btn_akhiri">⬛ AKHIRI PERJALANAN</string>
+    <string name="tracking_speed_label">Kecepatan</string>
+    <string name="tracking_distance_label">Jarak</string>
+    <string name="tracking_duration_label">Durasi</string>
+
+    <!-- Laporan Screen -->
+    <string name="laporan_title">Perjalanan Selesai</string>
+    <string name="laporan_subtitle">Status armada kini: Non-Aktif / Parkir</string>
+    <string name="laporan_durasi_label">Durasi</string>
+    <string name="laporan_penumpang_label">Total Penumpang</string>
+    <string name="laporan_jarak_label">Jarak Tempuh</string>
+    <string name="laporan_button">KEMBALI KE BERANDA</string>
+
+    <!-- Messages & Dialogs -->
+    <string name="msg_loading">Memproses…</string>
+    <string name="msg_login_success">Selamat datang, %s!</string>
+    <string name="msg_login_failed">Login gagal. Coba lagi.</string>
+    <string name="msg_connection_error">Koneksi error: %s</string>
+    <string name="msg_validation_username">Username tidak boleh kosong</string>
+    <string name="msg_validation_password">Password tidak boleh kosong</string>
+    <string name="msg_permission_denied">Izin ditolak. Tracking tidak dapat dimulai.</string>
+    <string name="msg_permission_granted">Izin diberikan!</string>
+    <string name="msg_gps_disabled">GPS tidak aktif. Silakan aktifkan GPS untuk melanjutkan tracking.</string>
+    <string name="msg_kapasitas_penuh">Kapasitas penuh!</string>
+    <string name="msg_status_updated">Status: %s</string>
+    <string name="msg_back_button_tracking">Gunakan tombol \'Akhiri Perjalanan\' untuk keluar</string>
+
+    <!-- Dialog Titles -->
+    <string name="dialog_permission_title">Izin Diperlukan</string>
+    <string name="dialog_gps_title">GPS Tidak Aktif</string>
+    <string name="dialog_akhiri_title">Akhiri Perjalanan?</string>
+    <string name="dialog_akhiri_message">Apakah Anda yakin ingin mengakhiri perjalanan ini?</string>
+
+    <!-- Dialog Buttons -->
+    <string name="dialog_btn_ok">OK</string>
+    <string name="dialog_btn_cancel">Batal</string>
+    <string name="dialog_btn_grant_permission">Berikan Izin</string>
+    <string name="dialog_btn_open_settings">Buka Settings</string>
+    <string name="dialog_btn_yes_akhiri">Ya, Akhiri</string>
+
+    <!-- Permission Rationale -->
+    <string name="permission_location_rationale">Aplikasi membutuhkan izin lokasi untuk melacak posisi bus secara real-time. Izin ini diperlukan agar penumpang bisa melihat lokasi bus Anda.</string>
+    <string name="permission_background_rationale">Izin lokasi latar belakang diperlukan agar tracking tetap berjalan meskipun aplikasi tidak sedang dibuka. Pilih \'Izinkan sepanjang waktu\'.</string>
+    <string name="permission_notification_rationale">Izin notifikasi diperlukan untuk menampilkan status tracking dan informasi perjalanan Anda.</string>
+
+    <!-- Notification -->
+    <string name="notification_tracking_title">🚍 Bus Tracker Active</string>
+    <string name="notification_tracking_content">Tracking your location…</string>
+    <string name="notification_channel_name">GPS Tracking</string>
+    <string name="notification_channel_desc">Background GPS tracking untuk bus</string>
+
+    <!-- Formats -->
+    <string name="format_speed">%.1f km/h</string>
+    <string name="format_distance">%.2f km</string>
+    <string name="format_duration">%dj %dm</string>
+    <string name="format_penumpang">%d Orang</string>
+    <string name="format_jarak_km">%.0f KM</string>
 </resources>

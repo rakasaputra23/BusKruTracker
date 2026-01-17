@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.bustracker.kru'
+    namespace 'com.example.buskrutracker'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.bustracker.kru"
+        applicationId "com.example.buskrutracker"
         minSdk 26
         targetSdk 35
         versionCode 1
@@ -40,6 +40,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.activity:activity:1.8.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.cardview:cardview:1.0.0'
 
     // Retrofit (API)
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
@@ -54,8 +55,11 @@ dependencies {
     // Google Play Services (GPS & Location)
     implementation 'com.google.android.gms:play-services-location:21.1.0'
 
-    // SharedPreferences Encrypted
+    // SharedPreferences Encrypted (Optional - untuk security tambahan)
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
+    // Gson (untuk parsing JSON)
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'

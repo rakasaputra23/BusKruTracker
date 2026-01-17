@@ -2,26 +2,38 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
+    <!-- ============================================ -->
+    <!-- PERMISSIONS -->
+    <!-- ============================================ -->
+
+    <!-- Internet & Network -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- GPS Permissions -->
+    <!-- GPS & Location Permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- Background Location (Android 10+) -->
+    <!-- Diperlukan untuk tracking di background -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
-    <!-- Foreground Service (untuk GPS tracking di background) -->
+    <!-- Foreground Service -->
+    <!-- Untuk GPS tracking tetap berjalan meskipun app di background -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
-    <!-- Wake Lock (agar app tidak sleep) -->
+    <!-- Wake Lock -->
+    <!-- Agar app tidak sleep saat tracking -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- Post Notifications (Android 13+) -->
+    <!-- Untuk menampilkan notifikasi tracking -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ============================================ -->
+    <!-- APPLICATION -->
+    <!-- ============================================ -->
 
     <application
         android:allowBackup="true"
@@ -35,11 +47,16 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+        <!-- ============================================ -->
+        <!-- ACTIVITIES -->
+        <!-- ============================================ -->
+
         <!-- Login Activity (Launcher) -->
         <activity
-            android:name=".activities.LoginActivity"
+            android:name="com.example.buskrutracker.activities.LoginActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -48,28 +65,35 @@
 
         <!-- Persiapan Activity -->
         <activity
-            android:name=".activities.PersiapanActivity"
+            android:name="com.example.buskrutracker.activities.PersiapanActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop" />
 
         <!-- Tracking Activity -->
         <activity
-            android:name=".activities.TrackingActivity"
+            android:name="com.example.buskrutracker.activities.TrackingActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop" />
 
         <!-- Laporan Activity -->
         <activity
-            android:name=".activities.LaporanActivity"
+            android:name="com.example.buskrutracker.activities.LaporanActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- ============================================ -->
+        <!-- SERVICES -->
+        <!-- ============================================ -->
+
         <!-- GPS Tracking Service (Foreground Service) -->
         <service
-            android:name=".services.GpsTrackingService"
+            android:name="com.example.buskrutracker.services.GpsTrackingService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location"
+            android:stopWithTask="false" />
 
     </application>
 
