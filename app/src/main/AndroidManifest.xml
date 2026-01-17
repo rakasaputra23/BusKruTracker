@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- GPS Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Background Location (Android 10+) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Foreground Service (untuk GPS tracking di background) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- Wake Lock (agar app tidak sleep) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Post Notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.BusKruTracker"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- Login Activity (Launcher) -->
+        <activity
+            android:name=".activities.LoginActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Persiapan Activity -->
+        <activity
+            android:name=".activities.PersiapanActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Tracking Activity -->
+        <activity
+            android:name=".activities.TrackingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Laporan Activity -->
+        <activity
+            android:name=".activities.LaporanActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- GPS Tracking Service (Foreground Service) -->
+        <service
+            android:name=".services.GpsTrackingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+    </application>
+
+</manifest>
