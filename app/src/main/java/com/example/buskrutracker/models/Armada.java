@@ -22,6 +22,12 @@ public class Armada {
     @SerializedName("status")
     private String status;
 
+    @SerializedName("created_at")
+    private String createdAt;
+
+    @SerializedName("updated_at")
+    private String updatedAt;
+
     // Constructor
     public Armada() {}
 
@@ -81,6 +87,22 @@ public class Armada {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     // Display method untuk Spinner

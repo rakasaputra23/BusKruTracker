@@ -1,6 +1,7 @@
 package com.example.buskrutracker.models;
 
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 public class Rute {
 
@@ -20,7 +21,7 @@ public class Rute {
     private String polyline;
 
     @SerializedName("track_coordinates")
-    private String trackCoordinates;
+    private List<TrackCoordinate> trackCoordinates;
 
     @SerializedName("jarak")
     private String jarak;
@@ -28,17 +29,41 @@ public class Rute {
     @SerializedName("estimasi_waktu")
     private int estimasiWaktu;
 
+    // Inner class untuk track coordinates
+    public static class TrackCoordinate {
+        @SerializedName("lat")
+        private double lat;
+
+        @SerializedName("lng")
+        private double lng;
+
+        public double getLat() {
+            return lat;
+        }
+
+        public void setLat(double lat) {
+            this.lat = lat;
+        }
+
+        public double getLng() {
+            return lng;
+        }
+
+        public void setLng(double lng) {
+            this.lng = lng;
+        }
+    }
+
     // Constructor
     public Rute() {}
 
     public Rute(int id, String namaRute, String kotaAsal, String kotaTujuan,
-                String polyline, String trackCoordinates, String jarak, int estimasiWaktu) {
+                String polyline, String jarak, int estimasiWaktu) {
         this.id = id;
         this.namaRute = namaRute;
         this.kotaAsal = kotaAsal;
         this.kotaTujuan = kotaTujuan;
         this.polyline = polyline;
-        this.trackCoordinates = trackCoordinates;
         this.jarak = jarak;
         this.estimasiWaktu = estimasiWaktu;
     }
@@ -84,11 +109,11 @@ public class Rute {
         this.polyline = polyline;
     }
 
-    public String getTrackCoordinates() {
+    public List<TrackCoordinate> getTrackCoordinates() {
         return trackCoordinates;
     }
 
-    public void setTrackCoordinates(String trackCoordinates) {
+    public void setTrackCoordinates(List<TrackCoordinate> trackCoordinates) {
         this.trackCoordinates = trackCoordinates;
     }
 

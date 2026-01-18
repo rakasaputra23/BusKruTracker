@@ -3,6 +3,7 @@ package com.example.buskrutracker.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -139,12 +140,28 @@ public class LoginActivity extends AppCompatActivity {
 
     private void handleLoginSuccess(Map<String, Object> data) {
         try {
-            // Parse response
-            int id = ((Double) data.get("id")).intValue();
-            String driver = (String) data.get("driver");
-            String username = (String) data.get("username");
-            String status = (String) data.get("status");
-            String token = (String) data.get("token");
+            // Response structure: data.kru + data.token
+            Map<String, Object> kruData = (Map<String, Object>) data.get("kru");
+            String token = data.get("token") != null ? data.get("token").toString() : "";
+
+            if (kruData == null) {
+                Toast.makeText(this, "Data kru tidak ditemukan", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Parse kru data
+            int id;
+            if (kruData.get("id") instanceof Double) {
+                id = ((Double) kruData.get("id")).intValue();
+            } else if (kruData.get("id") instanceof Integer) {
+                id = (Integer) kruData.get("id");
+            } else {
+                id = Integer.parseInt(kruData.get("id").toString());
+            }
+
+            String driver = kruData.get("driver") != null ? kruData.get("driver").toString() : "";
+            String username = kruData.get("username") != null ? kruData.get("username").toString() : "";
+            String status = kruData.get("status") != null ? kruData.get("status").toString() : "aktif";
 
             // Create Kru object
             Kru kru = new Kru();
@@ -168,7 +185,8 @@ public class LoginActivity extends AppCompatActivity {
         } catch (Exception e) {
             Toast.makeText(this,
                     "Error parsing data: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_LONG).show();
+            Log.e("LoginActivity", "Parse Error: ", e);
         }
     }
 

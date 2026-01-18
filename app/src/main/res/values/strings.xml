@@ -82,7 +82,7 @@
     <!-- Formats -->
     <string name="format_speed">%.1f km/h</string>
     <string name="format_distance">%.2f km</string>
-    <string name="format_duration">%dj %dm</string>
+    <string name="format_duration" formatted="false">%dj %dm</string>
     <string name="format_penumpang">%d Orang</string>
     <string name="format_jarak_km">%.0f KM</string>
 </resources>

@@ -6,167 +6,248 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
- * FirebaseManager - Mengelola Real-time Database Firebase
- * Digunakan untuk tracking lokasi bus secara real-time
+ * FirebaseManager - Kelola data bus di Firebase Realtime Database
+ * Struktur: buses/bus_{id}/plateNumber, class, route, capacity, currentPassengers,
+ *           driver, status, kondisi, routePolyline, location, track[], eta, totalDistance
  */
 public class FirebaseManager {
 
     private static final String TAG = "FirebaseManager";
-    private final DatabaseReference database;
+    private static final int MAX_TRACK_POINTS = 10;
 
-    // ============================================
-    // CONSTRUCTOR
-    // ============================================
+    // Ganti dengan DATABASE URL Anda dari Firebase Console
+    private static final String DATABASE_URL = "https://buskrutracker-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
+    private DatabaseReference databaseRef;
+    private SimpleDateFormat dateFormat;
+    private List<Map<String, Double>> trackHistory;
+
     public FirebaseManager() {
-        // Initialize Firebase Database
-        database = FirebaseDatabase.getInstance().getReference("buses");
+        try {
+            FirebaseDatabase database = FirebaseDatabase.getInstance(DATABASE_URL);
+            databaseRef = database.getReference();
+            trackHistory = new ArrayList<>();
+
+            dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            Log.d(TAG, "FirebaseManager initialized");
+        } catch (Exception e) {
+            Log.e(TAG, "FirebaseManager initialization error: " + e.getMessage());
+        }
     }
 
     // ============================================
-    // UPDATE BUS LOCATION (Real-time)
+    // INITIALIZE BUS
     // ============================================
+
     /**
-     * Update lokasi bus ke Firebase
-     * Data ini akan diakses oleh aplikasi penumpang untuk tracking real-time
+     * Initialize bus di Firebase dengan struktur lengkap
      */
-    public void updateBusLocation(int perjalanId, double latitude, double longitude,
-                                  float speed, double totalJarak) {
+    public void initializeBus(int perjalanId,
+                              String plateNumber,
+                              String busClass,
+                              String route,
+                              int capacity,
+                              String driver,
+                              String routePolyline) {
 
         String busKey = "bus_" + perjalanId;
+        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
 
-        Map<String, Object> locationData = new HashMap<>();
-        locationData.put("perjalanan_id", perjalanId);
-        locationData.put("latitude", latitude);
-        locationData.put("longitude", longitude);
-        locationData.put("speed", speed);
-        locationData.put("total_jarak", totalJarak);
-        locationData.put("timestamp", getCurrentTimestamp());
-        locationData.put("last_update", System.currentTimeMillis());
+        Map<String, Object> busData = new HashMap<>();
+        busData.put("plateNumber", plateNumber);
+        busData.put("class", busClass);
+        busData.put("route", route);
+        busData.put("capacity", capacity);
+        busData.put("currentPassengers", 0);
+        busData.put("driver", driver);
+        busData.put("status", "active");
+        busData.put("routePolyline", routePolyline);
+        busData.put("kondisi", "lancar"); // ⭐ Kondisi default
+        busData.put("kondisiUpdate", getCurrentTimestamp()); // ⭐ Timestamp kondisi
 
-        database.child(busKey).updateChildren(locationData)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Location updated successfully for: " + busKey);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to update location: " + e.getMessage());
-                });
+        // Location
+        Map<String, Object> location = new HashMap<>();
+        location.put("latitude", 0.0);
+        location.put("longitude", 0.0);
+        location.put("speed", 0.0);
+        location.put("lastUpdate", getCurrentTimestamp());
+        busData.put("location", location);
+
+        // Track array
+        busData.put("track", new ArrayList<>());
+
+        // ETA
+        Map<String, Object> eta = new HashMap<>();
+        eta.put("remainingDistance", 0.0);
+        eta.put("remainingTime", 0);
+        eta.put("estimatedArrival", "");
+        busData.put("eta", eta);
+
+        // Total distance
+        busData.put("totalDistance", 0.0);
+
+        busRef.setValue(busData)
+                .addOnSuccessListener(aVoid ->
+                        Log.d(TAG, "Bus initialized: " + busKey))
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Failed to initialize bus: " + e.getMessage()));
+
+        trackHistory.clear();
     }
 
     // ============================================
-    // SET BUS STATUS (Mulai/Selesai)
+    // UPDATE LOCATION WITH TRACK
     // ============================================
+
     /**
-     * Update status bus (berjalan/selesai/berhenti)
+     * Update location + track array (last 10 points)
      */
-    public void setBusStatus(int perjalanId, String status) {
+    public void updateLocationWithTrack(int perjalanId,
+                                        double latitude,
+                                        double longitude,
+                                        float speed,
+                                        double totalDistance) {
+
         String busKey = "bus_" + perjalanId;
+        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
 
-        Map<String, Object> statusData = new HashMap<>();
-        statusData.put("status", status);
-        statusData.put("timestamp", getCurrentTimestamp());
+        // Update location
+        Map<String, Object> location = new HashMap<>();
+        location.put("latitude", latitude);
+        location.put("longitude", longitude);
+        location.put("speed", (double) speed);
+        location.put("lastUpdate", getCurrentTimestamp());
 
-        database.child(busKey).updateChildren(statusData)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Status updated: " + status);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to update status: " + e.getMessage());
-                });
+        busRef.child("location").setValue(location);
+
+        // Add to track history
+        Map<String, Double> trackPoint = new HashMap<>();
+        trackPoint.put("lat", latitude);
+        trackPoint.put("lng", longitude);
+
+        trackHistory.add(trackPoint);
+
+        // Keep only last 10 points
+        if (trackHistory.size() > MAX_TRACK_POINTS) {
+            trackHistory.remove(0);
+        }
+
+        // Update track array
+        busRef.child("track").setValue(new ArrayList<>(trackHistory));
+
+        // Update total distance
+        busRef.child("totalDistance").setValue(totalDistance);
     }
 
     // ============================================
-    // CLEAR BUS LOCATION (When tracking stops)
+    // UPDATE ETA
     // ============================================
-    /**
-     * Hapus data bus dari Firebase (saat perjalanan selesai)
-     */
-    public void clearBusLocation(int perjalanId) {
-        String busKey = "bus_" + perjalanId;
 
-        database.child(busKey).removeValue()
+    /**
+     * Update ETA information
+     */
+    public void updateETA(int perjalanId,
+                          double remainingDistanceKm,
+                          int remainingTimeMinutes,
+                          String estimatedArrival) {
+
+        String busKey = "bus_" + perjalanId;
+        DatabaseReference etaRef = databaseRef.child("buses").child(busKey).child("eta");
+
+        Map<String, Object> eta = new HashMap<>();
+        eta.put("remainingDistance", remainingDistanceKm);
+        eta.put("remainingTime", remainingTimeMinutes);
+        eta.put("estimatedArrival", estimatedArrival);
+
+        etaRef.setValue(eta);
+    }
+
+    // ============================================
+    // UPDATE PASSENGERS
+    // ============================================
+
+    /**
+     * Update current passenger count
+     */
+    public void updatePassengers(int perjalanId, int currentPassengers) {
+        String busKey = "bus_" + perjalanId;
+        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
+
+        busRef.child("currentPassengers").setValue(currentPassengers);
+    }
+
+    // ============================================
+    // UPDATE STATUS
+    // ============================================
+
+    /**
+     * Update bus status (active, stopped, completed)
+     */
+    public void updateStatus(int perjalanId, String status) {
+        String busKey = "bus_" + perjalanId;
+        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
+
+        busRef.child("status").setValue(status);
+    }
+
+    // ============================================
+    // UPDATE KONDISI BUS ⭐⭐⭐
+    // ============================================
+
+    /**
+     * Update kondisi bus (lancar, macet, mogok)
+     */
+    public void updateKondisi(int perjalanId, String kondisi) {
+        String busKey = "bus_" + perjalanId;
+        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
+
+        Map<String, Object> kondisiData = new HashMap<>();
+        kondisiData.put("kondisi", kondisi);
+        kondisiData.put("kondisiUpdate", getCurrentTimestamp());
+
+        busRef.updateChildren(kondisiData)
+                .addOnSuccessListener(aVoid ->
+                        Log.d(TAG, "Kondisi updated: " + kondisi))
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Failed to update kondisi: " + e.getMessage()));
+    }
+
+    // ============================================
+    // CLEAR BUS DATA
+    // ============================================
+
+    /**
+     * Clear/remove bus data from Firebase
+     */
+    public void clearBusData(int perjalanId) {
+        String busKey = "bus_" + perjalanId;
+        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
+
+        busRef.removeValue()
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Bus data cleared: " + busKey);
+                    trackHistory.clear();
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to clear bus data: " + e.getMessage());
-                });
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Failed to clear bus data: " + e.getMessage()));
     }
 
     // ============================================
-    // SEND EMERGENCY ALERT
+    // HELPER
     // ============================================
-    /**
-     * Kirim alert darurat (kecelakaan, masalah teknis, dll)
-     */
-    public void sendEmergencyAlert(int perjalanId, double latitude, double longitude,
-                                   String message) {
 
-        String alertKey = "alert_" + perjalanId + "_" + System.currentTimeMillis();
-
-        Map<String, Object> alertData = new HashMap<>();
-        alertData.put("perjalanan_id", perjalanId);
-        alertData.put("latitude", latitude);
-        alertData.put("longitude", longitude);
-        alertData.put("message", message);
-        alertData.put("timestamp", getCurrentTimestamp());
-        alertData.put("created_at", System.currentTimeMillis());
-
-        database.child("alerts").child(alertKey).setValue(alertData)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Emergency alert sent");
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to send alert: " + e.getMessage());
-                });
-    }
-
-    // ============================================
-    // UPDATE BUS INFO (Armada, Rute, Kru)
-    // ============================================
-    /**
-     * Update informasi bus (armada, rute, kru)
-     * Dipanggil saat mulai perjalanan
-     */
-    public void updateBusInfo(int perjalanId, String armadaNomor, String ruteNama,
-                              String kruNama) {
-
-        String busKey = "bus_" + perjalanId;
-
-        Map<String, Object> busInfo = new HashMap<>();
-        busInfo.put("armada_nomor", armadaNomor);
-        busInfo.put("rute_nama", ruteNama);
-        busInfo.put("kru_nama", kruNama);
-
-        database.child(busKey).updateChildren(busInfo)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Bus info updated");
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to update bus info: " + e.getMessage());
-                });
-    }
-
-    // ============================================
-    // HELPER: Get Current Timestamp
-    // ============================================
     private String getCurrentTimestamp() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-        return sdf.format(new Date());
-    }
-
-    // ============================================
-    // GET DATABASE REFERENCE (for custom operations)
-    // ============================================
-    /**
-     * Get Firebase Database reference untuk operasi custom
-     */
-    public DatabaseReference getDatabaseReference() {
-        return database;
+        return dateFormat.format(new Date());
     }
 }

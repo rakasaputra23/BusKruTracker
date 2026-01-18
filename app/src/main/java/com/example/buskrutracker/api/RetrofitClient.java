@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
 
-    // ⚠️ GANTI DENGAN IP KOMPUTER ANDA!
-    // Cara cek IP: Buka CMD → ketik: ipconfig
-    // Cari "IPv4 Address" di bagian WiFi/Ethernet
-    private static final String BASE_URL = "http://192.168.1.100:8000/"; // ⭐ GANTI IP INI
+    // BASE URL - Laravel Backend API
+    // IP WiFi Laptop: 192.168.1.10
+    // Port: 8000
+    private static final String BASE_URL = "http://192.168.1.10:8000/";
 
     private static Retrofit retrofit = null;
     private static ApiService apiService = null;

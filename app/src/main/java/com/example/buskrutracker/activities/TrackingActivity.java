@@ -29,10 +29,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-/**
- * TrackingActivity - Operasional Aktif dengan Counter Penumpang
- * Design: Dark theme dengan big counter
- */
 public class TrackingActivity extends AppCompatActivity {
 
     private TextView tvRuteAktif, tvJumlahPenumpang, tvKapasitas;
@@ -81,13 +77,10 @@ public class TrackingActivity extends AppCompatActivity {
         armadaNomor = getIntent().getStringExtra("armada_nomor");
         ruteNama = getIntent().getStringExtra("rute_nama");
 
-        // Initialize
         initViews();
         initServices();
         setupUI();
         setupClickListeners();
-
-        // Load perjalanan aktif
         loadPerjalanAktif();
     }
 
@@ -118,7 +111,7 @@ public class TrackingActivity extends AppCompatActivity {
     private void setupUI() {
         tvRuteAktif.setText(ruteNama != null ? ruteNama : "N/A");
         updatePenumpangUI();
-        setActiveStatusButton(btnStatusLancar); // Default: Lancar
+        setActiveStatusButton(btnStatusLancar);
     }
 
     private void setupClickListeners() {
@@ -135,7 +128,6 @@ public class TrackingActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Register receiver untuk GPS updates
         IntentFilter filter = new IntentFilter("GPS_LOCATION_UPDATE");
         registerReceiver(locationReceiver, filter);
     }
@@ -143,7 +135,6 @@ public class TrackingActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Unregister receiver
         unregisterReceiver(locationReceiver);
     }
 
@@ -176,7 +167,7 @@ public class TrackingActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ApiResponse<Perjalanan>> call, Throwable t) {
-                // Silent fail, use default values
+                // Silent fail
             }
         });
     }
@@ -189,6 +180,7 @@ public class TrackingActivity extends AppCompatActivity {
         if (jumlahPenumpang < kapasitas) {
             jumlahPenumpang++;
             updatePenumpangUI();
+            updatePenumpangToService();
             updatePenumpangToServer();
         } else {
             Toast.makeText(this, "Kapasitas penuh!", Toast.LENGTH_SHORT).show();
@@ -199,6 +191,7 @@ public class TrackingActivity extends AppCompatActivity {
         if (jumlahPenumpang > 0) {
             jumlahPenumpang--;
             updatePenumpangUI();
+            updatePenumpangToService();
             updatePenumpangToServer();
         }
     }
@@ -206,6 +199,15 @@ public class TrackingActivity extends AppCompatActivity {
     private void updatePenumpangUI() {
         tvJumlahPenumpang.setText(String.valueOf(jumlahPenumpang));
         tvKapasitas.setText("/" + kapasitas);
+    }
+
+    private void updatePenumpangToService() {
+        Intent intent = GpsTrackingService.createPassengerUpdateIntent(
+                this,
+                perjalanId,
+                jumlahPenumpang
+        );
+        startService(intent);
     }
 
     private void updatePenumpangToServer() {
@@ -231,13 +233,36 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     // ============================================
-    // UPDATE KONDISI BUS
+    // UPDATE KONDISI BUS ⭐⭐⭐
     // ============================================
 
     private void updateKondisi(String kondisi, Button activeButton) {
         kondisiTerakhir = kondisi;
         setActiveStatusButton(activeButton);
 
+        // ⭐ 1. Update ke Firebase via Service (REALTIME)
+        updateKondisiToService(kondisi);
+
+        // ⭐ 2. Update ke MySQL via API (PERSISTENT)
+        updateKondisiToServer(kondisi);
+    }
+
+    /**
+     * ⭐ Update kondisi ke Firebase via Service
+     */
+    private void updateKondisiToService(String kondisi) {
+        Intent intent = GpsTrackingService.createKondisiUpdateIntent(
+                this,
+                perjalanId,
+                kondisi
+        );
+        startService(intent);
+    }
+
+    /**
+     * ⭐ Update kondisi ke MySQL via API
+     */
+    private void updateKondisiToServer(String kondisi) {
         String token = prefManager.getToken();
 
         Map<String, Object> data = new HashMap<>();
@@ -264,12 +289,9 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     private void setActiveStatusButton(Button activeButton) {
-        // Reset all buttons
         btnStatusLancar.setAlpha(0.5f);
         btnStatusMacet.setAlpha(0.5f);
         btnStatusMogok.setAlpha(0.5f);
-
-        // Set active
         activeButton.setAlpha(1.0f);
     }
 
@@ -288,7 +310,7 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     // ============================================
-    // UPDATE LOCATION UI (dari GPS Service)
+    // UPDATE LOCATION UI
     // ============================================
 
     private void updateLocationUI() {
@@ -355,15 +377,12 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     private void handlePerjalananSelesai() {
-        // Stop GPS Service
         Intent stopIntent = GpsTrackingService.createStopIntent(this);
         startService(stopIntent);
 
-        // Clear SharedPreferences
         prefManager.clearPerjalanId();
         prefManager.setTracking(false);
 
-        // Navigate to Laporan
         Intent intent = new Intent(TrackingActivity.this, LaporanActivity.class);
         intent.putExtra("total_penumpang", jumlahPenumpang);
         intent.putExtra("jarak_tempuh", totalJarak);
@@ -371,10 +390,6 @@ public class TrackingActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-
-    // ============================================
-    // UI HELPERS
-    // ============================================
 
     private void setLoading(boolean isLoading) {
         if (isLoading) {
@@ -388,7 +403,6 @@ public class TrackingActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // Disable back button saat tracking
         Toast.makeText(this, "Gunakan tombol 'Akhiri Perjalanan' untuk keluar", Toast.LENGTH_SHORT).show();
     }
 }

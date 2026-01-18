@@ -36,8 +36,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * PersiapanActivity - Pilih Armada & Rute, Mulai Perjalanan
- * Design: White background dengan card selection
+ * PersiapanActivity - Query data master dari database
  */
 public class PersiapanActivity extends AppCompatActivity {
 
@@ -58,7 +57,6 @@ public class PersiapanActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_persiapan);
 
-        // Initialize
         initViews();
         initServices();
         loadUserData();
@@ -154,10 +152,6 @@ public class PersiapanActivity extends AppCompatActivity {
         });
     }
 
-    // ============================================
-    // POPULATE SPINNERS
-    // ============================================
-
     private void populateArmadaSpinner() {
         ArrayAdapter<Armada> adapter = new ArrayAdapter<>(
                 this,
@@ -183,19 +177,16 @@ public class PersiapanActivity extends AppCompatActivity {
     // ============================================
 
     private void checkPermissionsAndStart() {
-        // Check permissions
         if (!permissionHelper.hasAllPermissions()) {
             showPermissionDialog();
             return;
         }
 
-        // Check GPS enabled
         if (!permissionHelper.isGpsEnabled()) {
             showGpsDialog();
             return;
         }
 
-        // Mulai perjalanan
         mulaiPerjalanan();
     }
 
@@ -222,11 +213,10 @@ public class PersiapanActivity extends AppCompatActivity {
     }
 
     // ============================================
-    // MULAI PERJALANAN
+    // MULAI PERJALANAN - AMBIL DATA DARI DATABASE
     // ============================================
 
     private void mulaiPerjalanan() {
-        // Validation
         if (spinnerArmada.getSelectedItem() == null) {
             Toast.makeText(this, "Pilih armada terlebih dahulu", Toast.LENGTH_SHORT).show();
             return;
@@ -240,17 +230,14 @@ public class PersiapanActivity extends AppCompatActivity {
         Armada selectedArmada = (Armada) spinnerArmada.getSelectedItem();
         Rute selectedRute = (Rute) spinnerRute.getSelectedItem();
 
-        // Show loading
         setLoading(true);
 
-        // Prepare request
         Map<String, Integer> data = new HashMap<>();
         data.put("armada_id", selectedArmada.getId());
         data.put("rute_id", selectedRute.getId());
 
         String token = prefManager.getToken();
 
-        // API Call
         Call<ApiResponse<Perjalanan>> call = apiService.mulaiPerjalanan(token, data);
         call.enqueue(new Callback<ApiResponse<Perjalanan>>() {
             @Override
@@ -286,14 +273,19 @@ public class PersiapanActivity extends AppCompatActivity {
         // Save perjalanan ID
         prefManager.savePerjalanId(perjalanan.getId());
 
-        // Start GPS Service
+        // Get kru data
         Kru kru = prefManager.getUser();
+
+        // Start GPS Service dengan data DARI DATABASE
         Intent serviceIntent = GpsTrackingService.createStartIntent(
                 this,
-                perjalanan.getId(),
-                armada.getPlatNomor(),
-                rute.getNamaRute(),
-                kru.getDriver()
+                perjalanan.getId(),          // perjalanan_id
+                armada.getPlatNomor(),       // armada.plat_nomor
+                armada.getKelas(),           // armada.kelas
+                armada.getKapasitas(),       // armada.kapasitas
+                rute.getNamaRute(),          // rute.nama_rute
+                rute.getPolyline(),          // rute.polyline ⭐ DARI DATABASE
+                kru.getDriver()              // kru.driver
         );
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -311,10 +303,6 @@ public class PersiapanActivity extends AppCompatActivity {
         finish();
     }
 
-    // ============================================
-    // PERMISSION RESULT
-    // ============================================
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -325,10 +313,6 @@ public class PersiapanActivity extends AppCompatActivity {
             Toast.makeText(this, "Izin ditolak. Tracking tidak dapat dimulai.", Toast.LENGTH_LONG).show();
         }
     }
-
-    // ============================================
-    // UI HELPERS
-    // ============================================
 
     private void setLoading(boolean isLoading) {
         if (isLoading) {
