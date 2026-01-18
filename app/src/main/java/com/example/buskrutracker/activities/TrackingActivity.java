@@ -6,13 +6,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 
 import com.example.buskrutracker.R;
 import com.example.buskrutracker.api.ApiService;
@@ -31,11 +32,19 @@ import retrofit2.Response;
 
 public class TrackingActivity extends AppCompatActivity {
 
-    private TextView tvRuteAktif, tvJumlahPenumpang, tvKapasitas;
+    // TextViews
+    private TextView tvOrigin, tvDestination;
+    private TextView tvJumlahPenumpang, tvKapasitas;
     private TextView tvSpeed, tvDistance, tvDuration;
-    private Button btnTambahPenumpang, btnKurangPenumpang;
-    private Button btnStatusLancar, btnStatusMacet, btnStatusMogok;
-    private Button btnAkhiriPerjalanan;
+
+    // Buttons (LinearLayout karena custom design)
+    private LinearLayout btnTambahPenumpang, btnKurangPenumpang;
+    private LinearLayout btnStatusLancar, btnStatusMacet, btnStatusMogok;
+    private LinearLayout btnAkhiriPerjalanan;
+
+    // CardViews untuk status buttons
+    private CardView cardStatusLancar, cardStatusMacet, cardStatusMogok;
+
     private ProgressBar progressBar;
 
     private ApiService apiService;
@@ -44,6 +53,8 @@ public class TrackingActivity extends AppCompatActivity {
     private int perjalanId;
     private String armadaNomor;
     private String ruteNama;
+    private String origin = "SBY";
+    private String destination = "MADIUN";
 
     private int jumlahPenumpang = 0;
     private int kapasitas = 40;
@@ -77,6 +88,9 @@ public class TrackingActivity extends AppCompatActivity {
         armadaNomor = getIntent().getStringExtra("armada_nomor");
         ruteNama = getIntent().getStringExtra("rute_nama");
 
+        // Parse rute jika formatnya "Origin - Destination"
+        parseRuteNama();
+
         initViews();
         initServices();
         setupUI();
@@ -84,21 +98,46 @@ public class TrackingActivity extends AppCompatActivity {
         loadPerjalanAktif();
     }
 
+    private void parseRuteNama() {
+        if (ruteNama != null && ruteNama.contains("-")) {
+            String[] parts = ruteNama.split("-");
+            if (parts.length >= 2) {
+                origin = parts[0].trim().toUpperCase();
+                destination = parts[1].trim().toUpperCase();
+            }
+        } else if (ruteNama != null && ruteNama.contains("→")) {
+            String[] parts = ruteNama.split("→");
+            if (parts.length >= 2) {
+                origin = parts[0].trim().toUpperCase();
+                destination = parts[1].trim().toUpperCase();
+            }
+        }
+    }
+
     private void initViews() {
-        tvRuteAktif = findViewById(R.id.tv_rute_aktif);
+        // Header
+        tvOrigin = findViewById(R.id.tv_origin);
+        tvDestination = findViewById(R.id.tv_destination);
+
+        // Counter
         tvJumlahPenumpang = findViewById(R.id.tv_jumlah_penumpang);
         tvKapasitas = findViewById(R.id.tv_kapasitas);
+
+        // Stats (optional - visibility gone by default)
         tvSpeed = findViewById(R.id.tv_speed);
         tvDistance = findViewById(R.id.tv_distance);
         tvDuration = findViewById(R.id.tv_duration);
 
+        // Penumpang buttons (LinearLayout)
         btnTambahPenumpang = findViewById(R.id.btn_tambah_penumpang);
         btnKurangPenumpang = findViewById(R.id.btn_kurang_penumpang);
 
+        // Status buttons (LinearLayout)
         btnStatusLancar = findViewById(R.id.btn_status_lancar);
         btnStatusMacet = findViewById(R.id.btn_status_macet);
         btnStatusMogok = findViewById(R.id.btn_status_mogok);
 
+        // Bottom action
         btnAkhiriPerjalanan = findViewById(R.id.btn_akhiri_perjalanan);
         progressBar = findViewById(R.id.progress_bar);
     }
@@ -109,20 +148,51 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     private void setupUI() {
-        tvRuteAktif.setText(ruteNama != null ? ruteNama : "N/A");
+        // Set rute
+        tvOrigin.setText(origin);
+        tvDestination.setText(destination);
+
+        // Set penumpang
         updatePenumpangUI();
+
+        // Set status default (Lancar)
         setActiveStatusButton(btnStatusLancar);
     }
 
     private void setupClickListeners() {
-        btnTambahPenumpang.setOnClickListener(v -> tambahPenumpang());
-        btnKurangPenumpang.setOnClickListener(v -> kurangPenumpang());
+        // Penumpang controls
+        btnTambahPenumpang.setOnClickListener(v -> {
+            // Haptic feedback
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            tambahPenumpang();
+        });
 
-        btnStatusLancar.setOnClickListener(v -> updateKondisi("lancar", btnStatusLancar));
-        btnStatusMacet.setOnClickListener(v -> updateKondisi("macet", btnStatusMacet));
-        btnStatusMogok.setOnClickListener(v -> updateKondisi("mogok", btnStatusMogok));
+        btnKurangPenumpang.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            kurangPenumpang();
+        });
 
-        btnAkhiriPerjalanan.setOnClickListener(v -> showAkhiriDialog());
+        // Status kondisi
+        btnStatusLancar.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            updateKondisi("lancar", btnStatusLancar);
+        });
+
+        btnStatusMacet.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            updateKondisi("macet", btnStatusMacet);
+        });
+
+        btnStatusMogok.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            updateKondisi("mogok", btnStatusMogok);
+        });
+
+        // Akhiri perjalanan
+        btnAkhiriPerjalanan.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            showAkhiriDialog();
+        });
     }
 
     @Override
@@ -135,7 +205,11 @@ public class TrackingActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(locationReceiver);
+        try {
+            unregisterReceiver(locationReceiver);
+        } catch (IllegalArgumentException e) {
+            // Receiver already unregistered
+        }
     }
 
     // ============================================
@@ -183,7 +257,7 @@ public class TrackingActivity extends AppCompatActivity {
             updatePenumpangToService();
             updatePenumpangToServer();
         } else {
-            Toast.makeText(this, "Kapasitas penuh!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "⚠️ Kapasitas penuh!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -193,6 +267,8 @@ public class TrackingActivity extends AppCompatActivity {
             updatePenumpangUI();
             updatePenumpangToService();
             updatePenumpangToServer();
+        } else {
+            Toast.makeText(this, "⚠️ Penumpang sudah 0", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -236,7 +312,7 @@ public class TrackingActivity extends AppCompatActivity {
     // UPDATE KONDISI BUS ⭐⭐⭐
     // ============================================
 
-    private void updateKondisi(String kondisi, Button activeButton) {
+    private void updateKondisi(String kondisi, LinearLayout activeButton) {
         kondisiTerakhir = kondisi;
         setActiveStatusButton(activeButton);
 
@@ -275,8 +351,10 @@ public class TrackingActivity extends AppCompatActivity {
             public void onResponse(Call<ApiResponse<Perjalanan>> call,
                                    Response<ApiResponse<Perjalanan>> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    String emoji = kondisi.equals("lancar") ? "✓" :
+                            kondisi.equals("macet") ? "⚠" : "🔧";
                     Toast.makeText(TrackingActivity.this,
-                            "Status: " + kondisi.toUpperCase(),
+                            emoji + " Status: " + kondisi.toUpperCase(),
                             Toast.LENGTH_SHORT).show();
                 }
             }
@@ -288,13 +366,36 @@ public class TrackingActivity extends AppCompatActivity {
         });
     }
 
-    private void setActiveStatusButton(Button activeButton) {
-        btnStatusLancar.setAlpha(0.5f);
-        btnStatusMacet.setAlpha(0.5f);
-        btnStatusMogok.setAlpha(0.5f);
+    /**
+     * Set active status button dengan animasi alpha
+     */
+    private void setActiveStatusButton(LinearLayout activeButton) {
+        // Reset semua ke inactive (alpha 0.7)
+        btnStatusLancar.setAlpha(0.7f);
+        btnStatusMacet.setAlpha(0.7f);
+        btnStatusMogok.setAlpha(0.7f);
+
+        // Set active button ke full opacity
         activeButton.setAlpha(1.0f);
+
+        // Optional: Animate scale
+        activeButton.animate()
+                .scaleX(1.05f)
+                .scaleY(1.05f)
+                .setDuration(150)
+                .withEndAction(() -> {
+                    activeButton.animate()
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setDuration(150)
+                            .start();
+                })
+                .start();
     }
 
+    /**
+     * Set active status berdasarkan kondisi string
+     */
     private void setActiveStatusByKondisi(String kondisi) {
         switch (kondisi.toLowerCase()) {
             case "macet":
@@ -314,12 +415,19 @@ public class TrackingActivity extends AppCompatActivity {
     // ============================================
 
     private void updateLocationUI() {
-        tvSpeed.setText(String.format("%.1f km/h", speedKmh));
-        tvDistance.setText(String.format("%.2f km", totalJarak));
+        if (tvSpeed != null && tvSpeed.getVisibility() == View.VISIBLE) {
+            tvSpeed.setText(String.format("%.1f km/h", speedKmh));
+        }
 
-        int hours = durasiMenit / 60;
-        int minutes = durasiMenit % 60;
-        tvDuration.setText(String.format("%dj %dm", hours, minutes));
+        if (tvDistance != null && tvDistance.getVisibility() == View.VISIBLE) {
+            tvDistance.setText(String.format("%.2f km", totalJarak));
+        }
+
+        if (tvDuration != null && tvDuration.getVisibility() == View.VISIBLE) {
+            int hours = durasiMenit / 60;
+            int minutes = durasiMenit % 60;
+            tvDuration.setText(String.format("%dj %dm", hours, minutes));
+        }
     }
 
     // ============================================
@@ -328,8 +436,10 @@ public class TrackingActivity extends AppCompatActivity {
 
     private void showAkhiriDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("Akhiri Perjalanan?")
-                .setMessage("Apakah Anda yakin ingin mengakhiri perjalanan ini?")
+                .setTitle("⬛ Akhiri Perjalanan?")
+                .setMessage("Apakah Anda yakin ingin mengakhiri perjalanan ini?\n\n" +
+                        "📊 Total Penumpang: " + jumlahPenumpang + "\n" +
+                        "📍 Jarak Tempuh: " + String.format("%.2f km", totalJarak))
                 .setPositiveButton("Ya, Akhiri", (dialog, which) -> akhiriPerjalanan())
                 .setNegativeButton("Batal", null)
                 .show();
@@ -360,9 +470,13 @@ public class TrackingActivity extends AppCompatActivity {
                         handlePerjalananSelesai();
                     } else {
                         Toast.makeText(TrackingActivity.this,
-                                apiResponse.getMessage(),
+                                "❌ " + apiResponse.getMessage(),
                                 Toast.LENGTH_SHORT).show();
                     }
+                } else {
+                    Toast.makeText(TrackingActivity.this,
+                            "❌ Gagal mengakhiri perjalanan",
+                            Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -370,39 +484,62 @@ public class TrackingActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse<Map<String, Object>>> call, Throwable t) {
                 setLoading(false);
                 Toast.makeText(TrackingActivity.this,
-                        "Error: " + t.getMessage(),
+                        "❌ Error: " + t.getMessage(),
                         Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void handlePerjalananSelesai() {
+        // Stop GPS tracking service
         Intent stopIntent = GpsTrackingService.createStopIntent(this);
         startService(stopIntent);
 
+        // Clear preferences
         prefManager.clearPerjalanId();
         prefManager.setTracking(false);
 
+        // Navigate to laporan
         Intent intent = new Intent(TrackingActivity.this, LaporanActivity.class);
         intent.putExtra("total_penumpang", jumlahPenumpang);
         intent.putExtra("jarak_tempuh", totalJarak);
         intent.putExtra("durasi_menit", durasiMenit);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
+
+        // Success toast
+        Toast.makeText(this, "✓ Perjalanan berhasil diakhiri", Toast.LENGTH_SHORT).show();
     }
 
     private void setLoading(boolean isLoading) {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             btnAkhiriPerjalanan.setEnabled(false);
+            btnAkhiriPerjalanan.setAlpha(0.5f);
         } else {
             progressBar.setVisibility(View.GONE);
             btnAkhiriPerjalanan.setEnabled(true);
+            btnAkhiriPerjalanan.setAlpha(1.0f);
         }
     }
 
     @Override
     public void onBackPressed() {
-        Toast.makeText(this, "Gunakan tombol 'Akhiri Perjalanan' untuk keluar", Toast.LENGTH_SHORT).show();
+        new AlertDialog.Builder(this)
+                .setTitle("⚠️ Peringatan")
+                .setMessage("Perjalanan masih aktif!\n\nGunakan tombol 'Akhiri Perjalanan' untuk keluar dengan aman.")
+                .setPositiveButton("Mengerti", null)
+                .show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            unregisterReceiver(locationReceiver);
+        } catch (IllegalArgumentException e) {
+            // Already unregistered
+        }
     }
 }

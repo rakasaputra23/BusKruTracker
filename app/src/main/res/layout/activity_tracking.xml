@@ -31,15 +31,40 @@
                 android:textColor="#9CA3AF"
                 android:letterSpacing="0.1" />
 
-            <TextView
-                android:id="@+id/tv_rute_aktif"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SBY → MADIUN"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/white"
-                android:layout_marginTop="4dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/tv_origin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SBY"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="→"
+                    android:textSize="12sp"
+                    android:textColor="#6B7280"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tv_destination"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MADIUN"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- GPS Status Badge -->
@@ -108,10 +133,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="34"
+                android:textColor="@android:color/white"
                 android:textSize="90sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/white"
-                android:includeFontPadding="false" />
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.05" />
 
             <TextView
                 android:id="@+id/tv_kapasitas"
@@ -123,9 +149,10 @@
                 android:textColor="#9CA3AF"
                 android:background="#1F2937"
                 android:padding="4dp"
-                android:layout_alignParentEnd="true"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="-24dp" />
+                android:layout_alignTop="@id/tv_jumlah_penumpang"
+                android:layout_toEndOf="@id/tv_jumlah_penumpang"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp" />
         </RelativeLayout>
 
         <!-- Penumpang Control Buttons -->
@@ -145,16 +172,35 @@
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="#1F2937">
 
-                <Button
+                <LinearLayout
                     android:id="@+id/btn_kurang_penumpang"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:text="−\nTURUN"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:textColor="#EF4444"
+                    android:orientation="vertical"
+                    android:gravity="center"
                     android:background="?attr/selectableItemBackground"
-                    android:gravity="center" />
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="−"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="#EF4444"
+                        android:includeFontPadding="false" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TURUN"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="#EF4444"
+                        android:letterSpacing="0.1"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <!-- Tambah Button -->
@@ -167,16 +213,35 @@
                 app:cardElevation="8dp"
                 app:cardBackgroundColor="#2563EB">
 
-                <Button
+                <LinearLayout
                     android:id="@+id/btn_tambah_penumpang"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:text="+\nNAIK"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/white"
+                    android:orientation="vertical"
+                    android:gravity="center"
                     android:background="?attr/selectableItemBackground"
-                    android:gravity="center" />
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:includeFontPadding="false" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NAIK"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:letterSpacing="0.1"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
 
@@ -202,59 +267,137 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <!-- Status: Lancar -->
-                <Button
-                    android:id="@+id/btn_status_lancar"
+                <!-- Status: Lancar (Active) -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="4dp"
-                    android:text="✓\nLANCAR"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/white"
-                    android:background="@drawable/btn_status_lancar"
-                    android:gravity="center" />
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#10B981">
+
+                    <LinearLayout
+                        android:id="@+id/btn_status_lancar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✓"
+                            android:textSize="18sp"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LANCAR"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
                 <!-- Status: Macet -->
-                <Button
-                    android:id="@+id/btn_status_macet"
+                <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
-                    android:text="⚠\nMACET"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:textColor="#FBBF24"
-                    android:background="@drawable/btn_status_inactive"
-                    android:gravity="center"
-                    android:alpha="0.5" />
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1F2937">
+
+                    <LinearLayout
+                        android:id="@+id/btn_status_macet"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:alpha="0.7">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚠"
+                            android:textSize="18sp"
+                            android:textColor="#FBBF24"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MACET"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:textColor="#FBBF24"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
                 <!-- Status: Mogok -->
-                <Button
-                    android:id="@+id/btn_status_mogok"
+                <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginStart="4dp"
-                    android:text="🔧\nMOGOK"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:textColor="#EF4444"
-                    android:background="@drawable/btn_status_inactive"
-                    android:gravity="center"
-                    android:alpha="0.5" />
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#1F2937">
+
+                    <LinearLayout
+                        android:id="@+id/btn_status_mogok"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:alpha="0.7">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔧"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MOGOK"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:textColor="#EF4444"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Info Stats (Speed, Distance, Duration) -->
+        <!-- Info Stats (Speed, Distance, Duration) - Optional, bisa dihapus jika tidak perlu -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="24dp">
+            android:layout_marginTop="24dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -347,16 +490,40 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <Button
-                android:id="@+id/btn_akhiri_perjalanan"
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="⬛ AKHIRI PERJALANAN"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#EF4444"
-                android:background="@drawable/btn_danger_outline"
-                android:gravity="center" />
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#7F1D1D">
+
+                <LinearLayout
+                    android:id="@+id/btn_akhiri_perjalanan"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⬛"
+                        android:textSize="14sp"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AKHIRI PERJALANAN"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#FCA5A5"
+                        android:letterSpacing="0.05" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <ProgressBar
                 android:id="@+id/progress_bar"

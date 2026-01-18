@@ -5,7 +5,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -37,12 +37,13 @@ import retrofit2.Response;
 
 /**
  * PersiapanActivity - Query data master dari database
+ * Design: Modern card-based UI (Match HTML Mockup)
  */
 public class PersiapanActivity extends AppCompatActivity {
 
-    private TextView tvNamaKru, tvStatus;
+    private TextView tvNamaKru, tvStatus, tvButtonText;
     private Spinner spinnerArmada, spinnerRute;
-    private Button btnMulaiPerjalanan;
+    private LinearLayout btnMulaiPerjalanan;
     private ProgressBar progressBar;
 
     private ApiService apiService;
@@ -70,6 +71,7 @@ public class PersiapanActivity extends AppCompatActivity {
     private void initViews() {
         tvNamaKru = findViewById(R.id.tv_nama_kru);
         tvStatus = findViewById(R.id.tv_status);
+        tvButtonText = findViewById(R.id.tv_button_text);
         spinnerArmada = findViewById(R.id.spinner_armada);
         spinnerRute = findViewById(R.id.spinner_rute);
         btnMulaiPerjalanan = findViewById(R.id.btn_mulai_perjalanan);
@@ -85,13 +87,35 @@ public class PersiapanActivity extends AppCompatActivity {
     private void loadUserData() {
         Kru kru = prefManager.getUser();
         if (kru != null) {
-            tvNamaKru.setText("Halo, " + kru.getDriver() + "!");
-            tvStatus.setText("● Online");
+            String nama = kru.getDriver();
+            // Format nama dengan sapaan yang tepat
+            String sapaan = getNamaSapaan(nama);
+            tvNamaKru.setText("Halo, " + sapaan + "!");
+            tvStatus.setText("Online");
+        } else {
+            tvNamaKru.setText("Halo, Kru!");
+            tvStatus.setText("Online");
         }
     }
 
+    private String getNamaSapaan(String namaLengkap) {
+        // Ambil nama depan saja
+        if (namaLengkap != null && !namaLengkap.isEmpty()) {
+            String[] parts = namaLengkap.split(" ");
+            String namaDepan = parts[0];
+
+            // Tambahkan gelar "Pak" atau "Bu" (default Pak)
+            // Bisa ditambahkan logic berdasarkan gender jika ada di database
+            return "Pak " + namaDepan;
+        }
+        return "Kru";
+    }
+
     private void setupClickListeners() {
-        btnMulaiPerjalanan.setOnClickListener(v -> checkPermissionsAndStart());
+        btnMulaiPerjalanan.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            checkPermissionsAndStart();
+        });
     }
 
     // ============================================
@@ -109,18 +133,20 @@ public class PersiapanActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<List<Armada>> apiResponse = response.body();
 
-                    if (apiResponse.isSuccess()) {
+                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
                         armadaList = apiResponse.getData();
                         populateArmadaSpinner();
+                    } else {
+                        showToast("⚠️ Data armada kosong");
                     }
+                } else {
+                    showToast("❌ Gagal memuat data armada");
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<List<Armada>>> call, Throwable t) {
-                Toast.makeText(PersiapanActivity.this,
-                        "Gagal load armada: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+                showToast("❌ Koneksi error: " + t.getMessage());
             }
         });
     }
@@ -136,39 +162,45 @@ public class PersiapanActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<List<Rute>> apiResponse = response.body();
 
-                    if (apiResponse.isSuccess()) {
+                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
                         ruteList = apiResponse.getData();
                         populateRuteSpinner();
+                    } else {
+                        showToast("⚠️ Data rute kosong");
                     }
+                } else {
+                    showToast("❌ Gagal memuat data rute");
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<List<Rute>>> call, Throwable t) {
-                Toast.makeText(PersiapanActivity.this,
-                        "Gagal load rute: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+                showToast("❌ Koneksi error: " + t.getMessage());
             }
         });
     }
 
     private void populateArmadaSpinner() {
+        // Custom adapter for better UI
         ArrayAdapter<Armada> adapter = new ArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
+                R.layout.spinner_item_armada,
+                R.id.tv_plat_nomor,
                 armadaList
         );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adapter.setDropDownViewResource(R.layout.spinner_item_armada);
         spinnerArmada.setAdapter(adapter);
     }
 
     private void populateRuteSpinner() {
+        // Custom adapter for better UI
         ArrayAdapter<Rute> adapter = new ArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
+                R.layout.spinner_item_rute,
+                R.id.tv_nama_rute,
                 ruteList
         );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adapter.setDropDownViewResource(R.layout.spinner_item_rute);
         spinnerRute.setAdapter(adapter);
     }
 
@@ -192,7 +224,7 @@ public class PersiapanActivity extends AppCompatActivity {
 
     private void showPermissionDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("Izin Diperlukan")
+                .setTitle("📍 Izin Lokasi Diperlukan")
                 .setMessage(permissionHelper.getLocationRationaleMessage())
                 .setPositiveButton("Berikan Izin", (dialog, which) -> {
                     permissionHelper.requestAllPermissions();
@@ -203,7 +235,7 @@ public class PersiapanActivity extends AppCompatActivity {
 
     private void showGpsDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("GPS Tidak Aktif")
+                .setTitle("🛰️ GPS Tidak Aktif")
                 .setMessage(permissionHelper.getGpsDisabledMessage())
                 .setPositiveButton("Buka Settings", (dialog, which) -> {
                     permissionHelper.openGpsSettings();
@@ -218,18 +250,35 @@ public class PersiapanActivity extends AppCompatActivity {
 
     private void mulaiPerjalanan() {
         if (spinnerArmada.getSelectedItem() == null) {
-            Toast.makeText(this, "Pilih armada terlebih dahulu", Toast.LENGTH_SHORT).show();
+            showToast("⚠️ Pilih armada terlebih dahulu");
             return;
         }
 
         if (spinnerRute.getSelectedItem() == null) {
-            Toast.makeText(this, "Pilih rute terlebih dahulu", Toast.LENGTH_SHORT).show();
+            showToast("⚠️ Pilih rute terlebih dahulu");
             return;
         }
 
         Armada selectedArmada = (Armada) spinnerArmada.getSelectedItem();
         Rute selectedRute = (Rute) spinnerRute.getSelectedItem();
 
+        // Show confirmation dialog
+        showConfirmationDialog(selectedArmada, selectedRute);
+    }
+
+    private void showConfirmationDialog(Armada armada, Rute rute) {
+        new AlertDialog.Builder(this)
+                .setTitle("🚀 Mulai Perjalanan?")
+                .setMessage("Armada: " + armada.getPlatNomor() + " (" + armada.getKelas() + ")\n" +
+                        "Rute: " + rute.getNamaRute())
+                .setPositiveButton("Ya, Mulai", (dialog, which) -> {
+                    startPerjalanan(armada, rute);
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void startPerjalanan(Armada selectedArmada, Rute selectedRute) {
         setLoading(true);
 
         Map<String, Integer> data = new HashMap<>();
@@ -248,23 +297,21 @@ public class PersiapanActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<Perjalanan> apiResponse = response.body();
 
-                    if (apiResponse.isSuccess()) {
+                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
                         Perjalanan perjalanan = apiResponse.getData();
                         handlePerjalananStarted(perjalanan, selectedArmada, selectedRute);
                     } else {
-                        Toast.makeText(PersiapanActivity.this,
-                                apiResponse.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        showToast("❌ " + apiResponse.getMessage());
                     }
+                } else {
+                    showToast("❌ Gagal memulai perjalanan");
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Perjalanan>> call, Throwable t) {
                 setLoading(false);
-                Toast.makeText(PersiapanActivity.this,
-                        "Error: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+                showToast("❌ Error: " + t.getMessage());
             }
         });
     }
@@ -272,6 +319,7 @@ public class PersiapanActivity extends AppCompatActivity {
     private void handlePerjalananStarted(Perjalanan perjalanan, Armada armada, Rute rute) {
         // Save perjalanan ID
         prefManager.savePerjalanId(perjalanan.getId());
+        prefManager.setTracking(true);
 
         // Get kru data
         Kru kru = prefManager.getUser();
@@ -294,13 +342,22 @@ public class PersiapanActivity extends AppCompatActivity {
             startService(serviceIntent);
         }
 
-        // Navigate to Tracking
-        Intent intent = new Intent(PersiapanActivity.this, TrackingActivity.class);
-        intent.putExtra("perjalanan_id", perjalanan.getId());
-        intent.putExtra("armada_nomor", armada.getPlatNomor());
-        intent.putExtra("rute_nama", rute.getNamaRute());
-        startActivity(intent);
-        finish();
+        // Success message
+        showToast("✓ Perjalanan dimulai!");
+
+        // Navigate to Tracking dengan delay smooth
+        btnMulaiPerjalanan.postDelayed(() -> {
+            Intent intent = new Intent(PersiapanActivity.this, TrackingActivity.class);
+            intent.putExtra("perjalanan_id", perjalanan.getId());
+            intent.putExtra("armada_nomor", armada.getPlatNomor());
+            intent.putExtra("rute_nama", rute.getNamaRute());
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+
+            // Smooth transition
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            finish();
+        }, 500);
     }
 
     @Override
@@ -308,9 +365,14 @@ public class PersiapanActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (permissionHelper.handlePermissionResult(requestCode, permissions, grantResults)) {
-            Toast.makeText(this, "Izin diberikan!", Toast.LENGTH_SHORT).show();
+            showToast("✓ Izin diberikan!");
+
+            // Auto-check GPS after permission granted
+            if (!permissionHelper.isGpsEnabled()) {
+                showGpsDialog();
+            }
         } else {
-            Toast.makeText(this, "Izin ditolak. Tracking tidak dapat dimulai.", Toast.LENGTH_LONG).show();
+            showToast("❌ Izin ditolak. Tracking tidak dapat dimulai.");
         }
     }
 
@@ -318,9 +380,36 @@ public class PersiapanActivity extends AppCompatActivity {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             btnMulaiPerjalanan.setEnabled(false);
+            btnMulaiPerjalanan.setAlpha(0.6f);
+            tvButtonText.setText("Memproses...");
         } else {
             progressBar.setVisibility(View.GONE);
             btnMulaiPerjalanan.setEnabled(true);
+            btnMulaiPerjalanan.setAlpha(1.0f);
+            tvButtonText.setText("MULAI PERJALANAN");
         }
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setTitle("Logout?")
+                .setMessage("Apakah Anda ingin keluar dari aplikasi?")
+                .setPositiveButton("Ya, Logout", (dialog, which) -> {
+                    // Clear session
+                    prefManager.logout();
+
+                    // Go to login
+                    Intent intent = new Intent(PersiapanActivity.this, LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setNegativeButton("Batal", null)
+                .show();
     }
 }

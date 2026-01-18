@@ -4,12 +4,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white"
+    android:background="#FFFFFF"
     android:gravity="center"
     android:padding="32dp">
 
-    <!-- Success Icon -->
+    <!-- Success Icon Card -->
     <androidx.cardview.widget.CardView
+        android:id="@+id/success_icon_card"
         android:layout_width="80dp"
         android:layout_height="80dp"
         app:cardCornerRadius="40dp"
@@ -22,7 +23,6 @@
             android:layout_height="40dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_check"
-            android:tint="#10B981"
             android:contentDescription="Success Icon" />
     </androidx.cardview.widget.CardView>
 
@@ -34,6 +34,7 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#1F2937"
+        android:fontFamily="sans-serif-medium"
         android:layout_marginBottom="8dp" />
 
     <!-- Subtitle -->
@@ -48,6 +49,7 @@
 
     <!-- Summary Card -->
     <androidx.cardview.widget.CardView
+        android:id="@+id/summary_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="16dp"
@@ -61,7 +63,7 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Durasi -->
+            <!-- Durasi Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -84,7 +86,8 @@
                     android:text="Durasi"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:textColor="#6B7280" />
+                    android:textColor="#6B7280"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:id="@+id/tv_durasi"
@@ -93,16 +96,18 @@
                     android:text="3 Jam 15 Mnt"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#1F2937" />
+                    android:textColor="#1F2937"
+                    android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
+            <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="#E5E7EB"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Total Penumpang -->
+            <!-- Total Penumpang Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -125,7 +130,8 @@
                     android:text="Total Penumpang"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:textColor="#6B7280" />
+                    android:textColor="#6B7280"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:id="@+id/tv_total_penumpang"
@@ -134,16 +140,18 @@
                     android:text="42 Orang"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#1F2937" />
+                    android:textColor="#1F2937"
+                    android:fontFamily="sans-serif-medium" />
             </LinearLayout>
 
+            <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="#E5E7EB"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Jarak Tempuh -->
+            <!-- Jarak Tempuh Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -165,7 +173,8 @@
                     android:text="Jarak Tempuh"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:textColor="#6B7280" />
+                    android:textColor="#6B7280"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:id="@+id/tv_jarak_tempuh"
@@ -174,12 +183,13 @@
                     android:text="145 KM"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#1F2937" />
+                    android:textColor="#1F2937"
+                    android:fontFamily="sans-serif-medium" />
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- Spacer -->
+    <!-- Spacer - Pushes button to bottom -->
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -193,8 +203,10 @@
         android:text="KEMBALI KE BERANDA"
         android:textStyle="bold"
         android:textSize="14sp"
+        android:textColor="#FFFFFF"
         android:background="@drawable/btn_dark"
-        android:textColor="@android:color/white"
-        android:elevation="8dp" />
+        android:elevation="8dp"
+        android:stateListAnimator="@null"
+        android:fontFamily="sans-serif-medium" />
 
 </LinearLayout>

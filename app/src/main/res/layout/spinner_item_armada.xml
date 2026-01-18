@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/tv_plat_nomor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AE 7788 UP"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#1E40AF" />
+
+    <TextView
+        android:id="@+id/tv_kelas"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Eksekutif Class"
+        android:textSize="10sp"
+        android:textColor="#3B82F6"
+        android:layout_marginTop="2dp" />
+</LinearLayout>

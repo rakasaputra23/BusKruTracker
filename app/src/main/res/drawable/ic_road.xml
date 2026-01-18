@@ -1,12 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/drawable/ic_road.xml -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+
     <path
-        android:fillColor="#FF000000"
-        android:pathData="M18,2L6,2v16h12L18,2zM11,16L9,16v-2h2v2zM11,12L9,12v-2h2v2zM11,8L9,8L9,6h2v2zM15,16h-2v-2h2v2zM15,12h-2v-2h2v2zM15,8h-2L13,6h2v2z"/>
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M2,22h20v-2L2,20z"/>
+        android:fillColor="#9CA3AF"
+        android:pathData="M20,18v-3h-2v3h-3l0,2h3v0c1.1,0 2,-0.9 2,-2zM4,18c0,1.1 0.9,2 2,2h3v-2H6v-3H4V18zM20,6c0,-1.1 -0.9,-2 -2,-2h-3v2h3v3h2V6zM9,4H6C4.9,4 4,4.9 4,6v3h2V6h3V4zM13,7h-2v3h2V7zM13,14h-2v3h2V14z" />
+
 </vector>

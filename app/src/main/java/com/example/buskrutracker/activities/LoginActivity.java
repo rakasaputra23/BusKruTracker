@@ -5,9 +5,10 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,12 +29,13 @@ import retrofit2.Response;
 
 /**
  * LoginActivity - Halaman Login Kru Bus
- * Design: Blue gradient dengan card input
+ * Design: Modern blue gradient dengan card input (Match HTML Mockup)
  */
 public class LoginActivity extends AppCompatActivity {
 
     private EditText etUsername, etPassword;
-    private Button btnLogin;
+    private LinearLayout btnLogin;
+    private TextView tvLoginText;
     private ProgressBar progressBar;
 
     private ApiService apiService;
@@ -62,6 +64,7 @@ public class LoginActivity extends AppCompatActivity {
         etUsername = findViewById(R.id.et_username);
         etPassword = findViewById(R.id.et_password);
         btnLogin = findViewById(R.id.btn_login);
+        tvLoginText = findViewById(R.id.tv_login_text);
         progressBar = findViewById(R.id.progress_bar);
     }
 
@@ -71,7 +74,17 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-        btnLogin.setOnClickListener(v -> handleLogin());
+        btnLogin.setOnClickListener(v -> {
+            // Haptic feedback
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            handleLogin();
+        });
+
+        // Enter key di password field = submit
+        etPassword.setOnEditorActionListener((v, actionId, event) -> {
+            handleLogin();
+            return true;
+        });
     }
 
     // ============================================
@@ -84,14 +97,16 @@ public class LoginActivity extends AppCompatActivity {
 
         // Validation
         if (TextUtils.isEmpty(username)) {
-            etUsername.setError("Username tidak boleh kosong");
+            etUsername.setError("ID tidak boleh kosong");
             etUsername.requestFocus();
+            showToast("⚠️ Masukkan ID Pengemudi");
             return;
         }
 
         if (TextUtils.isEmpty(password)) {
             etPassword.setError("Password tidak boleh kosong");
             etPassword.requestFocus();
+            showToast("⚠️ Masukkan Kata Sandi");
             return;
         }
 
@@ -117,23 +132,18 @@ public class LoginActivity extends AppCompatActivity {
                     if (apiResponse.isSuccess()) {
                         handleLoginSuccess(apiResponse.getData());
                     } else {
-                        Toast.makeText(LoginActivity.this,
-                                apiResponse.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        showToast("❌ " + apiResponse.getMessage());
                     }
                 } else {
-                    Toast.makeText(LoginActivity.this,
-                            "Login gagal. Coba lagi.",
-                            Toast.LENGTH_SHORT).show();
+                    showToast("❌ Login gagal. Periksa koneksi.");
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Map<String, Object>>> call, Throwable t) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this,
-                        "Koneksi error: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+                Log.e("LoginActivity", "Login error: ", t);
+                showToast("❌ Koneksi gagal. Coba lagi.");
             }
         });
     }
@@ -145,7 +155,7 @@ public class LoginActivity extends AppCompatActivity {
             String token = data.get("token") != null ? data.get("token").toString() : "";
 
             if (kruData == null) {
-                Toast.makeText(this, "Data kru tidak ditemukan", Toast.LENGTH_SHORT).show();
+                showToast("❌ Data kru tidak ditemukan");
                 return;
             }
 
@@ -160,32 +170,28 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             String driver = kruData.get("driver") != null ? kruData.get("driver").toString() : "";
-            String username = kruData.get("username") != null ? kruData.get("username").toString() : "";
+            String usernameDb = kruData.get("username") != null ? kruData.get("username").toString() : "";
             String status = kruData.get("status") != null ? kruData.get("status").toString() : "aktif";
 
             // Create Kru object
             Kru kru = new Kru();
             kru.setId(id);
             kru.setDriver(driver);
-            kru.setUsername(username);
+            kru.setUsername(usernameDb);
             kru.setStatus(status);
             kru.setToken(token);
 
             // Save to SharedPreferences
             prefManager.saveLoginData(token, kru);
 
-            // Show success message
-            Toast.makeText(this,
-                    "Selamat datang, " + driver + "!",
-                    Toast.LENGTH_SHORT).show();
+            // Show success message dengan delay untuk smooth transition
+            showToast("✓ Selamat datang, " + driver + "!");
 
-            // Navigate to Persiapan
-            goToPersiapan();
+            // Navigate to Persiapan dengan delay smooth
+            btnLogin.postDelayed(this::goToPersiapan, 500);
 
         } catch (Exception e) {
-            Toast.makeText(this,
-                    "Error parsing data: " + e.getMessage(),
-                    Toast.LENGTH_LONG).show();
+            showToast("❌ Error: " + e.getMessage());
             Log.e("LoginActivity", "Parse Error: ", e);
         }
     }
@@ -198,6 +204,9 @@ public class LoginActivity extends AppCompatActivity {
         Intent intent = new Intent(LoginActivity.this, PersiapanActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+
+        // Smooth transition
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         finish();
     }
 
@@ -209,17 +218,45 @@ public class LoginActivity extends AppCompatActivity {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             btnLogin.setEnabled(false);
-            btnLogin.setText("Memproses...");
+            btnLogin.setAlpha(0.6f);
+            tvLoginText.setText("Memproses...");
+
+            // Hide keyboard
+            hideKeyboard();
         } else {
             progressBar.setVisibility(View.GONE);
             btnLogin.setEnabled(true);
-            btnLogin.setText("MASUK SISTEM");
+            btnLogin.setAlpha(1.0f);
+            tvLoginText.setText("MASUK SISTEM");
         }
+    }
+
+    private void hideKeyboard() {
+        try {
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null && getCurrentFocus() != null) {
+                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onBackPressed() {
-        // Disable back button di login screen
-        // User harus login dulu
+        // Show confirmation dialog
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Keluar Aplikasi?")
+                .setMessage("Apakah Anda yakin ingin keluar?")
+                .setPositiveButton("Ya", (dialog, which) -> {
+                    finishAffinity(); // Close all activities
+                })
+                .setNegativeButton("Tidak", null)
+                .show();
     }
 }
