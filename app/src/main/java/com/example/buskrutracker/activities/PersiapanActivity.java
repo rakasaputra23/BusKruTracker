@@ -38,6 +38,7 @@ import retrofit2.Response;
 /**
  * PersiapanActivity - Query data master dari database
  * Design: Modern card-based UI (Match HTML Mockup)
+ * ⭐ FIXED: Sekarang pass namaBus ke GpsTrackingService dan TrackingActivity
  */
 public class PersiapanActivity extends AppCompatActivity {
 
@@ -267,9 +268,15 @@ public class PersiapanActivity extends AppCompatActivity {
     }
 
     private void showConfirmationDialog(Armada armada, Rute rute) {
+        // ⭐ Display nama bus di dialog
+        String busInfo = armada.getNamaBus() != null && !armada.getNamaBus().isEmpty() ?
+                armada.getNamaBus() + " (" + armada.getPlatNomor() + ")" :
+                armada.getPlatNomor();
+
         new AlertDialog.Builder(this)
                 .setTitle("🚀 Mulai Perjalanan?")
-                .setMessage("Armada: " + armada.getPlatNomor() + " (" + armada.getKelas() + ")\n" +
+                .setMessage("Bus: " + busInfo + "\n" +
+                        "Kelas: " + armada.getKelas() + "\n" +
                         "Rute: " + rute.getNamaRute())
                 .setPositiveButton("Ya, Mulai", (dialog, which) -> {
                     startPerjalanan(armada, rute);
@@ -316,6 +323,9 @@ public class PersiapanActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * ⭐ FIXED: Sekarang pass namaBus ke GpsTrackingService dan TrackingActivity
+     */
     private void handlePerjalananStarted(Perjalanan perjalanan, Armada armada, Rute rute) {
         // Save perjalanan ID
         prefManager.savePerjalanId(perjalanan.getId());
@@ -324,15 +334,16 @@ public class PersiapanActivity extends AppCompatActivity {
         // Get kru data
         Kru kru = prefManager.getUser();
 
-        // Start GPS Service dengan data DARI DATABASE
+        // ⭐ FIXED: Tambahkan armada.getNamaBus() sebagai parameter
         Intent serviceIntent = GpsTrackingService.createStartIntent(
                 this,
                 perjalanan.getId(),          // perjalanan_id
+                armada.getNamaBus(),         // ⭐ NAMA BUS (FIXED!)
                 armada.getPlatNomor(),       // armada.plat_nomor
                 armada.getKelas(),           // armada.kelas
                 armada.getKapasitas(),       // armada.kapasitas
                 rute.getNamaRute(),          // rute.nama_rute
-                rute.getPolyline(),          // rute.polyline ⭐ DARI DATABASE
+                rute.getPolyline(),          // rute.polyline
                 kru.getDriver()              // kru.driver
         );
 
@@ -349,6 +360,7 @@ public class PersiapanActivity extends AppCompatActivity {
         btnMulaiPerjalanan.postDelayed(() -> {
             Intent intent = new Intent(PersiapanActivity.this, TrackingActivity.class);
             intent.putExtra("perjalanan_id", perjalanan.getId());
+            intent.putExtra("nama_bus", armada.getNamaBus());      // ⭐ FIXED: Pass nama bus
             intent.putExtra("armada_nomor", armada.getPlatNomor());
             intent.putExtra("rute_nama", rute.getNamaRute());
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);

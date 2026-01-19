@@ -1,5 +1,6 @@
 package com.example.buskrutracker.activities;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -30,10 +31,15 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * TrackingActivity - Activity untuk monitoring perjalanan bus realtime
+ * ⭐ UPDATED: Support untuk display nama bus
+ */
 public class TrackingActivity extends AppCompatActivity {
 
     // TextViews
     private TextView tvOrigin, tvDestination;
+    private TextView tvBusInfo;  // ⭐ OPTIONAL: Untuk display nama bus + plat nomor
     private TextView tvJumlahPenumpang, tvKapasitas;
     private TextView tvSpeed, tvDistance, tvDuration;
 
@@ -51,6 +57,7 @@ public class TrackingActivity extends AppCompatActivity {
     private SharedPrefManager prefManager;
 
     private int perjalanId;
+    private String namaBus;        // ⭐ FIELD BARU
     private String armadaNomor;
     private String ruteNama;
     private String origin = "SBY";
@@ -72,7 +79,10 @@ public class TrackingActivity extends AppCompatActivity {
             double lng = intent.getDoubleExtra("longitude", 0);
             speedKmh = intent.getFloatExtra("speed", 0);
             totalJarak = intent.getDoubleExtra("distance", 0);
-            durasiMenit = intent.getIntExtra("duration", 0);
+            int updateCount = intent.getIntExtra("update_count", 0);
+
+            // Calculate duration
+            durasiMenit = updateCount / 12; // approx (update setiap 5 detik)
 
             updateLocationUI();
         }
@@ -83,8 +93,9 @@ public class TrackingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tracking);
 
-        // Get data dari intent
+        // ⭐ Get data dari intent
         perjalanId = getIntent().getIntExtra("perjalanan_id", 0);
+        namaBus = getIntent().getStringExtra("nama_bus");           // ⭐ AMBIL NAMA BUS
         armadaNomor = getIntent().getStringExtra("armada_nomor");
         ruteNama = getIntent().getStringExtra("rute_nama");
 
@@ -119,6 +130,10 @@ public class TrackingActivity extends AppCompatActivity {
         tvOrigin = findViewById(R.id.tv_origin);
         tvDestination = findViewById(R.id.tv_destination);
 
+        // ⭐ OPTIONAL: TextView untuk display nama bus
+        // Uncomment jika ada di layout
+        // tvBusInfo = findViewById(R.id.tv_bus_info);
+
         // Counter
         tvJumlahPenumpang = findViewById(R.id.tv_jumlah_penumpang);
         tvKapasitas = findViewById(R.id.tv_kapasitas);
@@ -151,6 +166,26 @@ public class TrackingActivity extends AppCompatActivity {
         // Set rute
         tvOrigin.setText(origin);
         tvDestination.setText(destination);
+
+        // ⭐ Set bus info (OPTIONAL - jika ada TextView di layout)
+        // if (tvBusInfo != null) {
+        //     if (namaBus != null && !namaBus.isEmpty()) {
+        //         tvBusInfo.setText(namaBus + " • " + armadaNomor);
+        //     } else {
+        //         tvBusInfo.setText(armadaNomor);
+        //     }
+        // }
+
+        // Set action bar title dengan nama bus (OPTIONAL)
+        if (getSupportActionBar() != null) {
+            if (namaBus != null && !namaBus.isEmpty()) {
+                getSupportActionBar().setTitle("🚍 " + namaBus);
+                getSupportActionBar().setSubtitle(armadaNomor + " • " + ruteNama);
+            } else {
+                getSupportActionBar().setTitle("🚍 " + armadaNomor);
+                getSupportActionBar().setSubtitle(ruteNama);
+            }
+        }
 
         // Set penumpang
         updatePenumpangUI();
@@ -195,6 +230,7 @@ public class TrackingActivity extends AppCompatActivity {
         });
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override
     protected void onResume() {
         super.onResume();
@@ -309,22 +345,22 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     // ============================================
-    // UPDATE KONDISI BUS ⭐⭐⭐
+    // UPDATE KONDISI BUS
     // ============================================
 
     private void updateKondisi(String kondisi, LinearLayout activeButton) {
         kondisiTerakhir = kondisi;
         setActiveStatusButton(activeButton);
 
-        // ⭐ 1. Update ke Firebase via Service (REALTIME)
+        // 1. Update ke Firebase via Service (REALTIME)
         updateKondisiToService(kondisi);
 
-        // ⭐ 2. Update ke MySQL via API (PERSISTENT)
+        // 2. Update ke MySQL via API (PERSISTENT)
         updateKondisiToServer(kondisi);
     }
 
     /**
-     * ⭐ Update kondisi ke Firebase via Service
+     * Update kondisi ke Firebase via Service
      */
     private void updateKondisiToService(String kondisi) {
         Intent intent = GpsTrackingService.createKondisiUpdateIntent(
@@ -336,7 +372,7 @@ public class TrackingActivity extends AppCompatActivity {
     }
 
     /**
-     * ⭐ Update kondisi ke MySQL via API
+     * Update kondisi ke MySQL via API
      */
     private void updateKondisiToServer(String kondisi) {
         String token = prefManager.getToken();
@@ -435,9 +471,14 @@ public class TrackingActivity extends AppCompatActivity {
     // ============================================
 
     private void showAkhiriDialog() {
+        // ⭐ Display nama bus di dialog (jika ada)
+        String busInfo = namaBus != null && !namaBus.isEmpty() ?
+                namaBus + " (" + armadaNomor + ")" : armadaNomor;
+
         new AlertDialog.Builder(this)
                 .setTitle("⬛ Akhiri Perjalanan?")
                 .setMessage("Apakah Anda yakin ingin mengakhiri perjalanan ini?\n\n" +
+                        "🚍 Bus: " + busInfo + "\n" +
                         "📊 Total Penumpang: " + jumlahPenumpang + "\n" +
                         "📍 Jarak Tempuh: " + String.format("%.2f km", totalJarak))
                 .setPositiveButton("Ya, Akhiri", (dialog, which) -> akhiriPerjalanan())
@@ -501,6 +542,9 @@ public class TrackingActivity extends AppCompatActivity {
 
         // Navigate to laporan
         Intent intent = new Intent(TrackingActivity.this, LaporanActivity.class);
+        intent.putExtra("perjalanan_id", perjalanId);
+        intent.putExtra("nama_bus", namaBus);  // ⭐ Pass nama bus ke laporan
+        intent.putExtra("armada_nomor", armadaNomor);
         intent.putExtra("total_penumpang", jumlahPenumpang);
         intent.putExtra("jarak_tempuh", totalJarak);
         intent.putExtra("durasi_menit", durasiMenit);

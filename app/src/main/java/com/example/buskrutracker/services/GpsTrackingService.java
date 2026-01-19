@@ -36,6 +36,7 @@ import java.util.Map;
 
 /**
  * GpsTrackingService - Enhanced dengan struktur Firebase yang benar
+ * ⭐ UPDATED: Tambah namaBus support
  */
 public class GpsTrackingService extends Service {
 
@@ -55,7 +56,7 @@ public class GpsTrackingService extends Service {
     public static final String ACTION_START_TRACKING = "START_TRACKING";
     public static final String ACTION_STOP_TRACKING = "STOP_TRACKING";
     public static final String ACTION_UPDATE_PASSENGERS = "UPDATE_PASSENGERS";
-    public static final String ACTION_UPDATE_KONDISI = "UPDATE_KONDISI"; // ⭐ NEW
+    public static final String ACTION_UPDATE_KONDISI = "UPDATE_KONDISI";
 
     // Intent Extras
     public static final String EXTRA_PERJALANAN_ID = "perjalanan_id";
@@ -65,6 +66,7 @@ public class GpsTrackingService extends Service {
 
     // Data tracking
     private int perjalanId;
+    private String namaBus;        // ⭐ FIELD BARU
     private String armadaNomor;
     private String kelas;
     private int kapasitas;
@@ -120,7 +122,7 @@ public class GpsTrackingService extends Service {
                 handleStopTracking();
             } else if (ACTION_UPDATE_PASSENGERS.equals(action)) {
                 handleUpdatePassengers(intent);
-            } else if (ACTION_UPDATE_KONDISI.equals(action)) { // ⭐ NEW HANDLER
+            } else if (ACTION_UPDATE_KONDISI.equals(action)) {
                 handleUpdateKondisi(intent);
             }
         }
@@ -162,6 +164,7 @@ public class GpsTrackingService extends Service {
 
     private void handleStartTracking(Intent intent) {
         perjalanId = intent.getIntExtra(EXTRA_PERJALANAN_ID, 0);
+        namaBus = intent.getStringExtra("nama_bus");           // ⭐ AMBIL NAMA BUS
         armadaNomor = intent.getStringExtra("armada_nomor");
         kelas = intent.getStringExtra("kelas");
         kapasitas = intent.getIntExtra("kapasitas", 40);
@@ -195,9 +198,10 @@ public class GpsTrackingService extends Service {
         prefManager.savePerjalanId(perjalanId);
         prefManager.setTracking(true);
 
-        // Initialize bus di Firebase
+        // ⭐ Initialize bus di Firebase dengan namaBus
         firebaseManager.initializeBus(
                 perjalanId,
+                namaBus,          // ⭐ PARAMETER BARU
                 armadaNomor,
                 kelas,
                 ruteNama,
@@ -212,6 +216,9 @@ public class GpsTrackingService extends Service {
         // Setup & start location updates
         setupLocationCallback();
         startLocationUpdates();
+
+        // ⭐ Log untuk debugging
+        Log.d(TAG, "Tracking started for: " + namaBus + " (" + armadaNomor + ")");
     }
 
     // ============================================
@@ -243,14 +250,13 @@ public class GpsTrackingService extends Service {
     }
 
     // ============================================
-    // UPDATE KONDISI ⭐⭐⭐
+    // UPDATE KONDISI
     // ============================================
 
     private void handleUpdateKondisi(Intent intent) {
         String kondisi = intent.getStringExtra("kondisi");
 
         if (kondisi != null && !kondisi.isEmpty()) {
-            // Update Firebase
             firebaseManager.updateKondisi(perjalanId, kondisi);
             Log.d(TAG, "Kondisi updated to: " + kondisi);
         }
@@ -487,8 +493,12 @@ public class GpsTrackingService extends Service {
     // HELPER METHODS - CREATE INTENTS
     // ============================================
 
+    /**
+     * ⭐ UPDATED: Tambah parameter namaBus
+     */
     public static Intent createStartIntent(Context context,
                                            int perjalanId,
+                                           String namaBus,      // ⭐ PARAMETER BARU
                                            String armadaNomor,
                                            String kelas,
                                            int kapasitas,
@@ -498,6 +508,7 @@ public class GpsTrackingService extends Service {
         Intent intent = new Intent(context, GpsTrackingService.class);
         intent.setAction(ACTION_START_TRACKING);
         intent.putExtra(EXTRA_PERJALANAN_ID, perjalanId);
+        intent.putExtra("nama_bus", namaBus);           // ⭐ EXTRA BARU
         intent.putExtra("armada_nomor", armadaNomor);
         intent.putExtra("kelas", kelas);
         intent.putExtra("kapasitas", kapasitas);
@@ -524,7 +535,7 @@ public class GpsTrackingService extends Service {
     }
 
     /**
-     * ⭐ Create intent untuk update kondisi bus
+     * Create intent untuk update kondisi bus
      */
     public static Intent createKondisiUpdateIntent(Context context,
                                                    int perjalanId,

@@ -16,7 +16,7 @@ import java.util.TimeZone;
 
 /**
  * FirebaseManager - Kelola data bus di Firebase Realtime Database
- * Struktur: buses/bus_{id}/plateNumber, class, route, capacity, currentPassengers,
+ * Struktur: buses/bus_{id}/namaBus, plateNumber, class, route, capacity, currentPassengers,
  *           driver, status, kondisi, routePolyline, location, track[], eta, totalDistance
  */
 public class FirebaseManager {
@@ -52,8 +52,10 @@ public class FirebaseManager {
 
     /**
      * Initialize bus di Firebase dengan struktur lengkap
+     * ⭐ UPDATED: Tambah parameter namaBus
      */
     public void initializeBus(int perjalanId,
+                              String namaBus,           // ⭐ PARAMETER BARU
                               String plateNumber,
                               String busClass,
                               String route,
@@ -65,6 +67,7 @@ public class FirebaseManager {
         DatabaseReference busRef = databaseRef.child("buses").child(busKey);
 
         Map<String, Object> busData = new HashMap<>();
+        busData.put("namaBus", namaBus);              // ⭐ FIELD BARU
         busData.put("plateNumber", plateNumber);
         busData.put("class", busClass);
         busData.put("route", route);
@@ -73,8 +76,8 @@ public class FirebaseManager {
         busData.put("driver", driver);
         busData.put("status", "active");
         busData.put("routePolyline", routePolyline);
-        busData.put("kondisi", "lancar"); // ⭐ Kondisi default
-        busData.put("kondisiUpdate", getCurrentTimestamp()); // ⭐ Timestamp kondisi
+        busData.put("kondisi", "lancar");
+        busData.put("kondisiUpdate", getCurrentTimestamp());
 
         // Location
         Map<String, Object> location = new HashMap<>();
@@ -99,7 +102,7 @@ public class FirebaseManager {
 
         busRef.setValue(busData)
                 .addOnSuccessListener(aVoid ->
-                        Log.d(TAG, "Bus initialized: " + busKey))
+                        Log.d(TAG, "Bus initialized: " + busKey + " | " + namaBus + " (" + plateNumber + ")"))
                 .addOnFailureListener(e ->
                         Log.e(TAG, "Failed to initialize bus: " + e.getMessage()));
 
@@ -202,7 +205,7 @@ public class FirebaseManager {
     }
 
     // ============================================
-    // UPDATE KONDISI BUS ⭐⭐⭐
+    // UPDATE KONDISI BUS
     // ============================================
 
     /**
