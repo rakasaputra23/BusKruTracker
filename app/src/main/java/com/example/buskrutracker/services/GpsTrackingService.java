@@ -34,45 +34,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * GpsTrackingService - Enhanced dengan struktur Firebase yang benar
- * ⭐ UPDATED: Tambah namaBus support
- */
 public class GpsTrackingService extends Service {
 
     private static final String TAG = "GpsTrackingService";
     private static final String CHANNEL_ID = "gps_tracking_channel";
     private static final int NOTIFICATION_ID = 1001;
 
-    // Location update interval
-    private static final long UPDATE_INTERVAL = 5000; // 5 detik
-    private static final long FASTEST_INTERVAL = 3000; // 3 detik
-    private static final float MIN_DISTANCE = 5.0f; // 5 meter
-
-    // ETA update interval (setiap 30 detik)
+    private static final long UPDATE_INTERVAL   = 5000;
+    private static final long FASTEST_INTERVAL  = 3000;
+    private static final float MIN_DISTANCE     = 5.0f;
     private static final long ETA_UPDATE_INTERVAL = 30000;
 
     // Intent Actions
-    public static final String ACTION_START_TRACKING = "START_TRACKING";
-    public static final String ACTION_STOP_TRACKING = "STOP_TRACKING";
-    public static final String ACTION_UPDATE_PASSENGERS = "UPDATE_PASSENGERS";
-    public static final String ACTION_UPDATE_KONDISI = "UPDATE_KONDISI";
+    public static final String ACTION_START_TRACKING      = "START_TRACKING";
+    public static final String ACTION_STOP_TRACKING       = "STOP_TRACKING";
+    public static final String ACTION_UPDATE_PASSENGERS   = "UPDATE_PASSENGERS";
+    public static final String ACTION_UPDATE_KONDISI      = "UPDATE_KONDISI";
+    public static final String ACTION_UPDATE_BOARDED      = "UPDATE_BOARDED"; // ⭐ BARU
 
     // Intent Extras
     public static final String EXTRA_PERJALANAN_ID = "perjalanan_id";
-    public static final String EXTRA_ARMADA_ID = "armada_id";
-    public static final String EXTRA_RUTE_ID = "rute_id";
-    public static final String EXTRA_KRU_ID = "kru_id";
 
     // Data tracking
-    private int perjalanId;
-    private String namaBus;        // ⭐ FIELD BARU
+    private int    perjalanId;
+    private String namaBus;
     private String armadaNomor;
     private String kelas;
-    private int kapasitas;
+    private int    kapasitas;
     private String ruteNama;
     private String polyline;
     private String kruNama;
+    private double tarif;       // ⭐ FIELD BARU
     private double destLat;
     private double destLng;
 
@@ -82,15 +74,13 @@ public class GpsTrackingService extends Service {
     private ETACalculator etaCalculator;
     private SharedPrefManager prefManager;
 
-    // Tracking data
-    private double totalJarak = 0.0;
+    private double  totalJarak   = 0.0;
     private Location lastLocation;
-    private long startTime;
-    private long lastETAUpdate = 0;
-    private int updateCount = 0;
-    private boolean isTracking = false;
+    private long   startTime;
+    private long   lastETAUpdate = 0;
+    private int    updateCount   = 0;
+    private boolean isTracking   = false;
 
-    // Full track history untuk MySQL
     private List<Map<String, Double>> fullTrackHistory;
 
     // ============================================
@@ -103,10 +93,10 @@ public class GpsTrackingService extends Service {
         Log.d(TAG, "Service Created");
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        firebaseManager = new FirebaseManager();
-        etaCalculator = new ETACalculator();
-        prefManager = SharedPrefManager.getInstance(this);
-        fullTrackHistory = new ArrayList<>();
+        firebaseManager     = new FirebaseManager();
+        etaCalculator       = new ETACalculator();
+        prefManager         = SharedPrefManager.getInstance(this);
+        fullTrackHistory    = new ArrayList<>();
 
         createNotificationChannel();
     }
@@ -115,18 +105,12 @@ public class GpsTrackingService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             String action = intent.getAction();
-
-            if (ACTION_START_TRACKING.equals(action)) {
-                handleStartTracking(intent);
-            } else if (ACTION_STOP_TRACKING.equals(action)) {
-                handleStopTracking();
-            } else if (ACTION_UPDATE_PASSENGERS.equals(action)) {
-                handleUpdatePassengers(intent);
-            } else if (ACTION_UPDATE_KONDISI.equals(action)) {
-                handleUpdateKondisi(intent);
-            }
+            if      (ACTION_START_TRACKING.equals(action))    handleStartTracking(intent);
+            else if (ACTION_STOP_TRACKING.equals(action))     handleStopTracking();
+            else if (ACTION_UPDATE_PASSENGERS.equals(action)) handleUpdatePassengers(intent);
+            else if (ACTION_UPDATE_KONDISI.equals(action))    handleUpdateKondisi(intent);
+            else if (ACTION_UPDATE_BOARDED.equals(action))    handleUpdateBoarded(intent); // ⭐
         }
-
         return START_STICKY;
     }
 
@@ -136,41 +120,33 @@ public class GpsTrackingService extends Service {
         Log.d(TAG, "Service Destroyed");
 
         stopLocationUpdates();
-
-        if (etaCalculator != null) {
-            etaCalculator.shutdown();
-        }
-
-        if (firebaseManager != null && perjalanId > 0) {
+        if (etaCalculator != null)  etaCalculator.shutdown();
+        if (firebaseManager != null && perjalanId > 0)
             firebaseManager.clearBusData(perjalanId);
-        }
-
-        if (prefManager != null) {
+        if (prefManager != null)
             prefManager.setTracking(false);
-        }
 
         isTracking = false;
     }
 
     @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    public IBinder onBind(Intent intent) { return null; }
 
     // ============================================
     // START TRACKING
     // ============================================
 
     private void handleStartTracking(Intent intent) {
-        perjalanId = intent.getIntExtra(EXTRA_PERJALANAN_ID, 0);
-        namaBus = intent.getStringExtra("nama_bus");           // ⭐ AMBIL NAMA BUS
+        perjalanId  = intent.getIntExtra(EXTRA_PERJALANAN_ID, 0);
+        namaBus     = intent.getStringExtra("nama_bus");
         armadaNomor = intent.getStringExtra("armada_nomor");
-        kelas = intent.getStringExtra("kelas");
-        kapasitas = intent.getIntExtra("kapasitas", 40);
-        ruteNama = intent.getStringExtra("rute_nama");
-        polyline = intent.getStringExtra("polyline");
-        kruNama = intent.getStringExtra("kru_nama");
+        kelas       = intent.getStringExtra("kelas");
+        kapasitas   = intent.getIntExtra("kapasitas", 40);
+        ruteNama    = intent.getStringExtra("rute_nama");
+        polyline    = intent.getStringExtra("polyline");
+        kruNama     = intent.getStringExtra("kru_nama");
+        tarif       = intent.getDoubleExtra("tarif", 0.0);  // ⭐ AMBIL TARIF
 
         if (perjalanId == 0 || polyline == null || polyline.isEmpty()) {
             Log.e(TAG, "Invalid data! Cannot start tracking.");
@@ -178,47 +154,44 @@ public class GpsTrackingService extends Service {
             return;
         }
 
-        // Extract destination dari polyline
         LatLng destination = PolylineUtils.getDestination(polyline);
         if (destination != null) {
             destLat = destination.latitude;
             destLng = destination.longitude;
         }
 
-        // Reset data
-        totalJarak = 0.0;
+        totalJarak   = 0.0;
         lastLocation = null;
-        startTime = System.currentTimeMillis();
+        startTime    = System.currentTimeMillis();
         lastETAUpdate = 0;
-        updateCount = 0;
-        isTracking = true;
+        updateCount  = 0;
+        isTracking   = true;
         fullTrackHistory.clear();
 
-        // Update SharedPreferences
         prefManager.savePerjalanId(perjalanId);
         prefManager.setTracking(true);
 
-        // ⭐ Initialize bus di Firebase dengan namaBus
+        // ⭐ Init Firebase dengan tarif
         firebaseManager.initializeBus(
                 perjalanId,
-                namaBus,          // ⭐ PARAMETER BARU
+                namaBus,
                 armadaNomor,
                 kelas,
                 ruteNama,
                 kapasitas,
                 kruNama,
-                polyline
+                polyline,
+                tarif       // ⭐ KIRIM TARIF
         );
 
-        // Start foreground service
-        startForeground(NOTIFICATION_ID, createNotification("Memulai tracking...", 0, 0));
+        startForeground(NOTIFICATION_ID,
+                createNotification("Memulai tracking...", 0, 0));
 
-        // Setup & start location updates
         setupLocationCallback();
         startLocationUpdates();
 
-        // ⭐ Log untuk debugging
-        Log.d(TAG, "Tracking started for: " + namaBus + " (" + armadaNomor + ")");
+        Log.d(TAG, "Tracking started: " + namaBus
+                + " (" + armadaNomor + ") tarif=" + tarif);
     }
 
     // ============================================
@@ -235,7 +208,6 @@ public class GpsTrackingService extends Service {
 
         prefManager.setTracking(false);
         isTracking = false;
-
         stopForeground(true);
         stopSelf();
     }
@@ -250,15 +222,22 @@ public class GpsTrackingService extends Service {
     }
 
     // ============================================
+    // ⭐ UPDATE BOARDED (akumulasi penumpang naik)
+    // ============================================
+
+    private void handleUpdateBoarded(Intent intent) {
+        int totalBoarded = intent.getIntExtra("total_boarded", 0);
+        firebaseManager.updateBoardedPassengers(perjalanId, totalBoarded);
+    }
+
+    // ============================================
     // UPDATE KONDISI
     // ============================================
 
     private void handleUpdateKondisi(Intent intent) {
         String kondisi = intent.getStringExtra("kondisi");
-
         if (kondisi != null && !kondisi.isEmpty()) {
             firebaseManager.updateKondisi(perjalanId, kondisi);
-            Log.d(TAG, "Kondisi updated to: " + kondisi);
         }
     }
 
@@ -270,14 +249,9 @@ public class GpsTrackingService extends Service {
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null || !isTracking) {
-                    return;
-                }
-
+                if (locationResult == null || !isTracking) return;
                 for (Location location : locationResult.getLocations()) {
-                    if (location != null) {
-                        handleLocationUpdate(location);
-                    }
+                    if (location != null) handleLocationUpdate(location);
                 }
             }
         };
@@ -285,19 +259,13 @@ public class GpsTrackingService extends Service {
 
     private void startLocationUpdates() {
         LocationRequest locationRequest = new LocationRequest.Builder(
-                Priority.PRIORITY_HIGH_ACCURACY,
-                UPDATE_INTERVAL
-        )
+                Priority.PRIORITY_HIGH_ACCURACY, UPDATE_INTERVAL)
                 .setMinUpdateIntervalMillis(FASTEST_INTERVAL)
                 .setMinUpdateDistanceMeters(MIN_DISTANCE)
                 .build();
-
         try {
             fusedLocationClient.requestLocationUpdates(
-                    locationRequest,
-                    locationCallback,
-                    Looper.getMainLooper()
-            );
+                    locationRequest, locationCallback, Looper.getMainLooper());
         } catch (SecurityException e) {
             Log.e(TAG, "Permission error: " + e.getMessage());
             stopSelf();
@@ -305,9 +273,8 @@ public class GpsTrackingService extends Service {
     }
 
     private void stopLocationUpdates() {
-        if (fusedLocationClient != null && locationCallback != null) {
+        if (fusedLocationClient != null && locationCallback != null)
             fusedLocationClient.removeLocationUpdates(locationCallback);
-        }
     }
 
     // ============================================
@@ -317,50 +284,38 @@ public class GpsTrackingService extends Service {
     private void handleLocationUpdate(Location location) {
         if (location == null || !isTracking) return;
 
-        double lat = location.getLatitude();
-        double lng = location.getLongitude();
-        float speed = location.getSpeed() * 3.6f;
-        float accuracy = location.getAccuracy();
+        double lat      = location.getLatitude();
+        double lng      = location.getLongitude();
+        float  speed    = location.getSpeed() * 3.6f;
+        float  accuracy = location.getAccuracy();
 
-        if (accuracy > 50) {
-            return;
-        }
+        if (accuracy > 50) return;
 
-        // Calculate distance
         if (lastLocation != null) {
             float distance = lastLocation.distanceTo(location);
-            if (distance > MIN_DISTANCE) {
-                totalJarak += distance / 1000.0;
-            }
+            if (distance > MIN_DISTANCE) totalJarak += distance / 1000.0;
         }
 
         lastLocation = location;
         updateCount++;
 
-        // Add to full track history
         Map<String, Double> trackPoint = new HashMap<>();
         trackPoint.put("lat", lat);
         trackPoint.put("lng", lng);
         fullTrackHistory.add(trackPoint);
 
-        // Update Firebase
         firebaseManager.updateLocationWithTrack(perjalanId, lat, lng, speed, totalJarak);
 
-        // Update ETA setiap 30 detik
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastETAUpdate > ETA_UPDATE_INTERVAL) {
             updateETA(lat, lng, speed);
             lastETAUpdate = currentTime;
         }
 
-        // Update notification
         updateNotification(
                 String.format("%.1f km/h | %.2f km", speed, totalJarak),
-                speed,
-                totalJarak
-        );
+                speed, totalJarak);
 
-        // Broadcast location update
         broadcastLocationUpdate(lat, lng, speed, totalJarak);
     }
 
@@ -369,66 +324,47 @@ public class GpsTrackingService extends Service {
     // ============================================
 
     private void updateETA(double currentLat, double currentLng, float currentSpeed) {
-        if (destLat == 0 || destLng == 0) {
-            return;
-        }
+        if (destLat == 0 || destLng == 0) return;
 
-        etaCalculator.calculateETA(
-                currentLat, currentLng,
-                destLat, destLng,
+        etaCalculator.calculateETA(currentLat, currentLng, destLat, destLng,
                 new ETACalculator.ETACallback() {
                     @Override
                     public void onETACalculated(double remainingDistanceKm,
                                                 int remainingTimeMinutes,
                                                 String estimatedArrival) {
-                        firebaseManager.updateETA(
-                                perjalanId,
-                                remainingDistanceKm,
-                                remainingTimeMinutes,
-                                estimatedArrival
-                        );
+                        firebaseManager.updateETA(perjalanId,
+                                remainingDistanceKm, remainingTimeMinutes, estimatedArrival);
                     }
-
                     @Override
                     public void onError(String error) {
                         etaCalculator.calculateETAManual(
-                                currentLat, currentLng,
-                                destLat, destLng,
+                                currentLat, currentLng, destLat, destLng,
                                 currentSpeed > 0 ? currentSpeed : 60.0f,
                                 new ETACalculator.ETACallback() {
                                     @Override
-                                    public void onETACalculated(double remainingDistanceKm,
-                                                                int remainingTimeMinutes,
-                                                                String estimatedArrival) {
-                                        firebaseManager.updateETA(
-                                                perjalanId,
-                                                remainingDistanceKm,
-                                                remainingTimeMinutes,
-                                                estimatedArrival
-                                        );
+                                    public void onETACalculated(double d, int t, String a) {
+                                        firebaseManager.updateETA(perjalanId, d, t, a);
                                     }
-
                                     @Override
                                     public void onError(String error) {
-                                        Log.e(TAG, "Manual ETA calculation failed: " + error);
+                                        Log.e(TAG, "Manual ETA failed: " + error);
                                     }
-                                }
-                        );
+                                });
                     }
-                }
-        );
+                });
     }
 
     // ============================================
     // BROADCAST & NOTIFICATION
     // ============================================
 
-    private void broadcastLocationUpdate(double lat, double lng, float speed, double jarak) {
+    private void broadcastLocationUpdate(double lat, double lng,
+                                         float speed, double jarak) {
         Intent intent = new Intent("GPS_LOCATION_UPDATE");
-        intent.putExtra("latitude", lat);
-        intent.putExtra("longitude", lng);
-        intent.putExtra("speed", speed);
-        intent.putExtra("distance", jarak);
+        intent.putExtra("latitude",     lat);
+        intent.putExtra("longitude",    lng);
+        intent.putExtra("speed",        speed);
+        intent.putExtra("distance",     jarak);
         intent.putExtra("update_count", updateCount);
         sendBroadcast(intent);
     }
@@ -436,34 +372,27 @@ public class GpsTrackingService extends Service {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "GPS Tracking",
-                    NotificationManager.IMPORTANCE_LOW
-            );
+                    CHANNEL_ID, "GPS Tracking", NotificationManager.IMPORTANCE_LOW);
             channel.setDescription("Background GPS tracking untuk bus");
             channel.setShowBadge(false);
-
             NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
+            if (manager != null) manager.createNotificationChannel(channel);
         }
     }
 
-    private Notification createNotification(String contentText, float speed, double jarak) {
+    private Notification createNotification(String contentText,
+                                            float speed, double jarak) {
         Intent notificationIntent = new Intent(this, TrackingActivity.class);
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
         Intent stopIntent = new Intent(this, GpsTrackingService.class);
         stopIntent.setAction(ACTION_STOP_TRACKING);
         PendingIntent stopPendingIntent = PendingIntent.getService(
-                this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE
-        );
+                this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("🚍 Bus Tracker Active")
@@ -473,48 +402,45 @@ public class GpsTrackingService extends Service {
                 .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .addAction(
-                        android.R.drawable.ic_menu_close_clear_cancel,
-                        "Stop",
-                        stopPendingIntent
-                )
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel,
+                        "Stop", stopPendingIntent)
                 .build();
     }
 
     private void updateNotification(String content, float speed, double jarak) {
         Notification notification = createNotification(content, speed, jarak);
         NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            manager.notify(NOTIFICATION_ID, notification);
-        }
+        if (manager != null) manager.notify(NOTIFICATION_ID, notification);
     }
 
     // ============================================
-    // HELPER METHODS - CREATE INTENTS
+    // STATIC INTENT FACTORIES
     // ============================================
 
     /**
-     * ⭐ UPDATED: Tambah parameter namaBus
+     * ⭐ UPDATED: Tambah parameter tarif
      */
     public static Intent createStartIntent(Context context,
                                            int perjalanId,
-                                           String namaBus,      // ⭐ PARAMETER BARU
+                                           String namaBus,
                                            String armadaNomor,
                                            String kelas,
                                            int kapasitas,
                                            String ruteNama,
                                            String polyline,
-                                           String kruNama) {
+                                           String kruNama,
+                                           double tarif) {    // ⭐ PARAMETER BARU
         Intent intent = new Intent(context, GpsTrackingService.class);
         intent.setAction(ACTION_START_TRACKING);
         intent.putExtra(EXTRA_PERJALANAN_ID, perjalanId);
-        intent.putExtra("nama_bus", namaBus);           // ⭐ EXTRA BARU
+        intent.putExtra("nama_bus",    namaBus);
         intent.putExtra("armada_nomor", armadaNomor);
-        intent.putExtra("kelas", kelas);
-        intent.putExtra("kapasitas", kapasitas);
-        intent.putExtra("rute_nama", ruteNama);
-        intent.putExtra("polyline", polyline);
-        intent.putExtra("kru_nama", kruNama);
+        intent.putExtra("kelas",       kelas);
+        intent.putExtra("kapasitas",   kapasitas);
+        intent.putExtra("rute_nama",   ruteNama);
+        intent.putExtra("polyline",    polyline);
+        intent.putExtra("kru_nama",    kruNama);
+        intent.putExtra("tarif",       tarif);                // ⭐ EXTRA BARU
         return intent;
     }
 
@@ -529,21 +455,31 @@ public class GpsTrackingService extends Service {
                                                      int currentPassengers) {
         Intent intent = new Intent(context, GpsTrackingService.class);
         intent.setAction(ACTION_UPDATE_PASSENGERS);
-        intent.putExtra(EXTRA_PERJALANAN_ID, perjalanId);
-        intent.putExtra("current_passengers", currentPassengers);
+        intent.putExtra(EXTRA_PERJALANAN_ID,   perjalanId);
+        intent.putExtra("current_passengers",  currentPassengers);
         return intent;
     }
 
     /**
-     * Create intent untuk update kondisi bus
+     * ⭐ BARU — Update akumulasi penumpang naik ke Firebase
      */
+    public static Intent createBoardingUpdateIntent(Context context,
+                                                    int perjalanId,
+                                                    int totalBoarded) {
+        Intent intent = new Intent(context, GpsTrackingService.class);
+        intent.setAction(ACTION_UPDATE_BOARDED);
+        intent.putExtra(EXTRA_PERJALANAN_ID, perjalanId);
+        intent.putExtra("total_boarded",     totalBoarded);
+        return intent;
+    }
+
     public static Intent createKondisiUpdateIntent(Context context,
                                                    int perjalanId,
                                                    String kondisi) {
         Intent intent = new Intent(context, GpsTrackingService.class);
         intent.setAction(ACTION_UPDATE_KONDISI);
         intent.putExtra(EXTRA_PERJALANAN_ID, perjalanId);
-        intent.putExtra("kondisi", kondisi);
+        intent.putExtra("kondisi",           kondisi);
         return intent;
     }
 }

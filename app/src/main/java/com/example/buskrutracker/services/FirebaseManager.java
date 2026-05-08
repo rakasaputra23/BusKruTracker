@@ -14,18 +14,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-/**
- * FirebaseManager - Kelola data bus di Firebase Realtime Database
- * Struktur: buses/bus_{id}/namaBus, plateNumber, class, route, capacity, currentPassengers,
- *           driver, status, kondisi, routePolyline, location, track[], eta, totalDistance
- */
 public class FirebaseManager {
 
     private static final String TAG = "FirebaseManager";
     private static final int MAX_TRACK_POINTS = 10;
 
-    // Ganti dengan DATABASE URL Anda dari Firebase Console
-    private static final String DATABASE_URL = "https://buskrutracker-default-rtdb.asia-southeast1.firebasedatabase.app/";
+    private static final String DATABASE_URL =
+            "https://buskrutracker-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     private DatabaseReference databaseRef;
     private SimpleDateFormat dateFormat;
@@ -51,39 +46,41 @@ public class FirebaseManager {
     // ============================================
 
     /**
-     * Initialize bus di Firebase dengan struktur lengkap
-     * ⭐ UPDATED: Tambah parameter namaBus
+     * ⭐ UPDATED: Tambah tarif & totalPassengersBoarded
      */
     public void initializeBus(int perjalanId,
-                              String namaBus,           // ⭐ PARAMETER BARU
+                              String namaBus,
                               String plateNumber,
                               String busClass,
                               String route,
                               int capacity,
                               String driver,
-                              String routePolyline) {
+                              String routePolyline,
+                              double tarif) {           // ⭐ PARAMETER BARU
 
         String busKey = "bus_" + perjalanId;
         DatabaseReference busRef = databaseRef.child("buses").child(busKey);
 
         Map<String, Object> busData = new HashMap<>();
-        busData.put("namaBus", namaBus);              // ⭐ FIELD BARU
-        busData.put("plateNumber", plateNumber);
-        busData.put("class", busClass);
-        busData.put("route", route);
-        busData.put("capacity", capacity);
-        busData.put("currentPassengers", 0);
-        busData.put("driver", driver);
-        busData.put("status", "active");
-        busData.put("routePolyline", routePolyline);
-        busData.put("kondisi", "lancar");
-        busData.put("kondisiUpdate", getCurrentTimestamp());
+        busData.put("namaBus",        namaBus);
+        busData.put("plateNumber",    plateNumber);
+        busData.put("class",          busClass);
+        busData.put("route",          route);
+        busData.put("capacity",       capacity);
+        busData.put("currentPassengers",       0);
+        busData.put("totalPassengersBoarded",  0);   // ⭐ FIELD BARU
+        busData.put("tarif",          tarif);         // ⭐ FIELD BARU
+        busData.put("driver",         driver);
+        busData.put("status",         "active");
+        busData.put("routePolyline",  routePolyline);
+        busData.put("kondisi",        "lancar");
+        busData.put("kondisiUpdate",  getCurrentTimestamp());
 
         // Location
         Map<String, Object> location = new HashMap<>();
-        location.put("latitude", 0.0);
-        location.put("longitude", 0.0);
-        location.put("speed", 0.0);
+        location.put("latitude",   0.0);
+        location.put("longitude",  0.0);
+        location.put("speed",      0.0);
         location.put("lastUpdate", getCurrentTimestamp());
         busData.put("location", location);
 
@@ -92,9 +89,9 @@ public class FirebaseManager {
 
         // ETA
         Map<String, Object> eta = new HashMap<>();
-        eta.put("remainingDistance", 0.0);
-        eta.put("remainingTime", 0);
-        eta.put("estimatedArrival", "");
+        eta.put("remainingDistance",  0.0);
+        eta.put("remainingTime",      0);
+        eta.put("estimatedArrival",   "");
         busData.put("eta", eta);
 
         // Total distance
@@ -102,7 +99,9 @@ public class FirebaseManager {
 
         busRef.setValue(busData)
                 .addOnSuccessListener(aVoid ->
-                        Log.d(TAG, "Bus initialized: " + busKey + " | " + namaBus + " (" + plateNumber + ")"))
+                        Log.d(TAG, "Bus initialized: " + busKey
+                                + " | " + namaBus
+                                + " tarif=" + tarif))
                 .addOnFailureListener(e ->
                         Log.e(TAG, "Failed to initialize bus: " + e.getMessage()));
 
@@ -113,9 +112,6 @@ public class FirebaseManager {
     // UPDATE LOCATION WITH TRACK
     // ============================================
 
-    /**
-     * Update location + track array (last 10 points)
-     */
     public void updateLocationWithTrack(int perjalanId,
                                         double latitude,
                                         double longitude,
@@ -125,31 +121,23 @@ public class FirebaseManager {
         String busKey = "bus_" + perjalanId;
         DatabaseReference busRef = databaseRef.child("buses").child(busKey);
 
-        // Update location
         Map<String, Object> location = new HashMap<>();
-        location.put("latitude", latitude);
-        location.put("longitude", longitude);
-        location.put("speed", (double) speed);
+        location.put("latitude",   latitude);
+        location.put("longitude",  longitude);
+        location.put("speed",      (double) speed);
         location.put("lastUpdate", getCurrentTimestamp());
-
         busRef.child("location").setValue(location);
 
-        // Add to track history
         Map<String, Double> trackPoint = new HashMap<>();
         trackPoint.put("lat", latitude);
         trackPoint.put("lng", longitude);
-
         trackHistory.add(trackPoint);
 
-        // Keep only last 10 points
         if (trackHistory.size() > MAX_TRACK_POINTS) {
             trackHistory.remove(0);
         }
 
-        // Update track array
         busRef.child("track").setValue(new ArrayList<>(trackHistory));
-
-        // Update total distance
         busRef.child("totalDistance").setValue(totalDistance);
     }
 
@@ -157,9 +145,6 @@ public class FirebaseManager {
     // UPDATE ETA
     // ============================================
 
-    /**
-     * Update ETA information
-     */
     public void updateETA(int perjalanId,
                           double remainingDistanceKm,
                           int remainingTimeMinutes,
@@ -170,8 +155,8 @@ public class FirebaseManager {
 
         Map<String, Object> eta = new HashMap<>();
         eta.put("remainingDistance", remainingDistanceKm);
-        eta.put("remainingTime", remainingTimeMinutes);
-        eta.put("estimatedArrival", estimatedArrival);
+        eta.put("remainingTime",     remainingTimeMinutes);
+        eta.put("estimatedArrival",  estimatedArrival);
 
         etaRef.setValue(eta);
     }
@@ -181,47 +166,55 @@ public class FirebaseManager {
     // ============================================
 
     /**
-     * Update current passenger count
+     * Update penumpang yang sedang ada di dalam bus (bisa naik/turun).
      */
     public void updatePassengers(int perjalanId, int currentPassengers) {
         String busKey = "bus_" + perjalanId;
-        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
+        databaseRef.child("buses").child(busKey)
+                .child("currentPassengers")
+                .setValue(currentPassengers);
+    }
 
-        busRef.child("currentPassengers").setValue(currentPassengers);
+    /**
+     * ⭐ BARU — Update akumulasi penumpang yang NAIK (tidak pernah berkurang).
+     * Dipanggil setiap kali ada penumpang boarding baru.
+     */
+    public void updateBoardedPassengers(int perjalanId, int totalBoarded) {
+        String busKey = "bus_" + perjalanId;
+        databaseRef.child("buses").child(busKey)
+                .child("totalPassengersBoarded")
+                .setValue(totalBoarded)
+                .addOnSuccessListener(aVoid ->
+                        Log.d(TAG, "totalPassengersBoarded updated: " + totalBoarded))
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "Failed to update boarded: " + e.getMessage()));
     }
 
     // ============================================
     // UPDATE STATUS
     // ============================================
 
-    /**
-     * Update bus status (active, stopped, completed)
-     */
     public void updateStatus(int perjalanId, String status) {
         String busKey = "bus_" + perjalanId;
-        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
-
-        busRef.child("status").setValue(status);
+        databaseRef.child("buses").child(busKey)
+                .child("status")
+                .setValue(status);
     }
 
     // ============================================
     // UPDATE KONDISI BUS
     // ============================================
 
-    /**
-     * Update kondisi bus (lancar, macet, mogok)
-     */
     public void updateKondisi(int perjalanId, String kondisi) {
         String busKey = "bus_" + perjalanId;
         DatabaseReference busRef = databaseRef.child("buses").child(busKey);
 
         Map<String, Object> kondisiData = new HashMap<>();
-        kondisiData.put("kondisi", kondisi);
+        kondisiData.put("kondisi",       kondisi);
         kondisiData.put("kondisiUpdate", getCurrentTimestamp());
 
         busRef.updateChildren(kondisiData)
-                .addOnSuccessListener(aVoid ->
-                        Log.d(TAG, "Kondisi updated: " + kondisi))
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Kondisi updated: " + kondisi))
                 .addOnFailureListener(e ->
                         Log.e(TAG, "Failed to update kondisi: " + e.getMessage()));
     }
@@ -230,14 +223,10 @@ public class FirebaseManager {
     // CLEAR BUS DATA
     // ============================================
 
-    /**
-     * Clear/remove bus data from Firebase
-     */
     public void clearBusData(int perjalanId) {
         String busKey = "bus_" + perjalanId;
-        DatabaseReference busRef = databaseRef.child("buses").child(busKey);
-
-        busRef.removeValue()
+        databaseRef.child("buses").child(busKey)
+                .removeValue()
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Bus data cleared: " + busKey);
                     trackHistory.clear();

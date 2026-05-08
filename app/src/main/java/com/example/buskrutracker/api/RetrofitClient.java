@@ -12,7 +12,7 @@ public class RetrofitClient {
     // BASE URL - Laravel Backend API
     // IP WiFi Laptop: 192.168.1.10
     // Port: 8000
-    private static final String BASE_URL = "http://192.168.1.10:8000/";
+    private static final String BASE_URL = "https://ebb3-103-215-73-250.ngrok-free.app/";
 
     private static Retrofit retrofit = null;
     private static ApiService apiService = null;

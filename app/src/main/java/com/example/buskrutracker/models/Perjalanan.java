@@ -40,6 +40,17 @@ public class Perjalanan {
     @SerializedName("catatan")
     private String catatan;
 
+    // ⭐ FIELD BARU — kolom pendapatan
+    @SerializedName("tarif_snapshot")
+    private double tarifSnapshot;
+
+    @SerializedName("total_penumpang_naik")
+    private int totalPenumpangNaik;
+
+    @SerializedName("total_pendapatan")
+    private double totalPendapatan;
+
+    // Relations
     @SerializedName("kru")
     private Kru kru;
 
@@ -52,124 +63,65 @@ public class Perjalanan {
     // Constructor
     public Perjalanan() {}
 
-    // Getters & Setters
-    public int getId() {
-        return id;
-    }
+    // ============================================
+    // GETTERS & SETTERS — existing fields
+    // ============================================
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public int getKruId() {
-        return kruId;
-    }
+    public int getKruId() { return kruId; }
+    public void setKruId(int kruId) { this.kruId = kruId; }
 
-    public void setKruId(int kruId) {
-        this.kruId = kruId;
-    }
+    public int getArmadaId() { return armadaId; }
+    public void setArmadaId(int armadaId) { this.armadaId = armadaId; }
 
-    public int getArmadaId() {
-        return armadaId;
-    }
+    public int getRuteId() { return ruteId; }
+    public void setRuteId(int ruteId) { this.ruteId = ruteId; }
 
-    public void setArmadaId(int armadaId) {
-        this.armadaId = armadaId;
-    }
+    public String getWaktuMulai() { return waktuMulai; }
+    public void setWaktuMulai(String waktuMulai) { this.waktuMulai = waktuMulai; }
 
-    public int getRuteId() {
-        return ruteId;
-    }
+    public String getWaktuSelesai() { return waktuSelesai; }
+    public void setWaktuSelesai(String waktuSelesai) { this.waktuSelesai = waktuSelesai; }
 
-    public void setRuteId(int ruteId) {
-        this.ruteId = ruteId;
-    }
+    public int getTotalPenumpang() { return totalPenumpang; }
+    public void setTotalPenumpang(int totalPenumpang) { this.totalPenumpang = totalPenumpang; }
 
-    public String getWaktuMulai() {
-        return waktuMulai;
-    }
+    public String getJarakTempuh() { return jarakTempuh; }
+    public void setJarakTempuh(String jarakTempuh) { this.jarakTempuh = jarakTempuh; }
 
-    public void setWaktuMulai(String waktuMulai) {
-        this.waktuMulai = waktuMulai;
-    }
+    public int getDurasiMenit() { return durasiMenit; }
+    public void setDurasiMenit(int durasiMenit) { this.durasiMenit = durasiMenit; }
 
-    public String getWaktuSelesai() {
-        return waktuSelesai;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setWaktuSelesai(String waktuSelesai) {
-        this.waktuSelesai = waktuSelesai;
-    }
+    public String getKondisiTerakhir() { return kondisiTerakhir; }
+    public void setKondisiTerakhir(String kondisiTerakhir) { this.kondisiTerakhir = kondisiTerakhir; }
 
-    public int getTotalPenumpang() {
-        return totalPenumpang;
-    }
+    public String getCatatan() { return catatan; }
+    public void setCatatan(String catatan) { this.catatan = catatan; }
 
-    public void setTotalPenumpang(int totalPenumpang) {
-        this.totalPenumpang = totalPenumpang;
-    }
+    public Kru getKru() { return kru; }
+    public void setKru(Kru kru) { this.kru = kru; }
 
-    public String getJarakTempuh() {
-        return jarakTempuh;
-    }
+    public Armada getArmada() { return armada; }
+    public void setArmada(Armada armada) { this.armada = armada; }
 
-    public void setJarakTempuh(String jarakTempuh) {
-        this.jarakTempuh = jarakTempuh;
-    }
+    public Rute getRute() { return rute; }
+    public void setRute(Rute rute) { this.rute = rute; }
 
-    public int getDurasiMenit() {
-        return durasiMenit;
-    }
+    // ============================================
+    // GETTERS & SETTERS — field baru pendapatan
+    // ============================================
 
-    public void setDurasiMenit(int durasiMenit) {
-        this.durasiMenit = durasiMenit;
-    }
+    public double getTarifSnapshot() { return tarifSnapshot; }
+    public void setTarifSnapshot(double tarifSnapshot) { this.tarifSnapshot = tarifSnapshot; }
 
-    public String getStatus() {
-        return status;
-    }
+    public int getTotalPenumpangNaik() { return totalPenumpangNaik; }
+    public void setTotalPenumpangNaik(int totalPenumpangNaik) { this.totalPenumpangNaik = totalPenumpangNaik; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getKondisiTerakhir() {
-        return kondisiTerakhir;
-    }
-
-    public void setKondisiTerakhir(String kondisiTerakhir) {
-        this.kondisiTerakhir = kondisiTerakhir;
-    }
-
-    public String getCatatan() {
-        return catatan;
-    }
-
-    public void setCatatan(String catatan) {
-        this.catatan = catatan;
-    }
-
-    public Kru getKru() {
-        return kru;
-    }
-
-    public void setKru(Kru kru) {
-        this.kru = kru;
-    }
-
-    public Armada getArmada() {
-        return armada;
-    }
-
-    public void setArmada(Armada armada) {
-        this.armada = armada;
-    }
-
-    public Rute getRute() {
-        return rute;
-    }
-
-    public void setRute(Rute rute) {
-        this.rute = rute;
-    }
+    public double getTotalPendapatan() { return totalPendapatan; }
+    public void setTotalPendapatan(double totalPendapatan) { this.totalPendapatan = totalPendapatan; }
 }
